@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { confirmSignUp } from 'aws-amplify/auth';
+import { confirmSignUp, getCurrentUser } from 'aws-amplify/auth';
 import useAuthStore from '../../store/authStore.js';
 
 export default function Signup() {
@@ -15,6 +15,12 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const { register, login }   = useAuthStore();
   const navigate              = useNavigate();
+
+  useEffect(() => {
+    getCurrentUser()
+      .then(() => navigate('/', { replace: true }))
+      .catch(() => {});
+  }, [navigate]);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -39,8 +45,12 @@ export default function Signup() {
     try {
       const username = sessionStorage.getItem('pendingUsername');
       await confirmSignUp({ username, confirmationCode: code });
-      // auto login using email (alias)
-      await login(form.email, form.password);
+      try {
+        await getCurrentUser();
+      } catch {
+        // auto login using email (alias) only when there is no active session
+        await login(form.email, form.password);
+      }
       sessionStorage.removeItem('pendingUsername');
       navigate('/');
     } catch (err) {

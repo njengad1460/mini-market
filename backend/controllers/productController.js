@@ -1,6 +1,17 @@
 import Shoe from '../models/Shoe.js';
 import User from '../models/User.js';
 import AuditLog from '../models/AuditLog.js';
+import { signImageList } from '../services/s3Service.js';
+
+const attachSignedImages = async (shoe) => {
+  if (!shoe) return shoe;
+
+  const serialized = typeof shoe.toObject === 'function' ? shoe.toObject() : shoe;
+  return {
+    ...serialized,
+    images: await signImageList(serialized.images || []),
+  };
+};
 
 // Staff or admin adds a product (staff → pending, admin → active)
 export const addProduct = async (req, res) => {
@@ -18,7 +29,7 @@ export const addProduct = async (req, res) => {
       diff:        { after: req.body },
     });
 
-    res.status(201).json(shoe);
+    res.status(201).json(await attachSignedImages(shoe));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -38,7 +49,7 @@ export const approveProduct = async (req, res) => {
       diff:        { before: { status: 'pending' }, after: { status: 'active' } },
     });
 
-    res.json(shoe);
+    res.json(await attachSignedImages(shoe));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -48,7 +59,7 @@ export const approveProduct = async (req, res) => {
 export const getProducts = async (req, res) => {
   try {
     const shoes = await Shoe.find({ status: 'active' }).select('-costPrice');
-    res.json(shoes);
+    res.json(await Promise.all(shoes.map(attachSignedImages)));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -57,8 +68,14 @@ export const getProducts = async (req, res) => {
 // Admin only — includes costPrice
 export const getProductsAdmin = async (req, res) => {
   try {
-    const shoes = await Shoe.find().populate('addedBy', 'name');
-    res.json(shoes);
+    const query = Shoe.find().populate('addedBy', 'name');
+
+    if (req.user.role !== 'admin') {
+      query.select('-costPrice');
+    }
+
+    const shoes = await query;
+    res.json(await Promise.all(shoes.map(attachSignedImages)));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -69,7 +86,7 @@ export const getProduct = async (req, res) => {
   try {
     const shoe = await Shoe.findById(req.params.id).select('-costPrice');
     if (!shoe) return res.status(404).json({ message: 'Product not found' });
-    res.json(shoe);
+    res.json(await attachSignedImages(shoe));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -90,7 +107,7 @@ export const updateProduct = async (req, res) => {
       diff:        { before: before.toObject(), after: shoe.toObject() },
     });
 
-    res.json(shoe);
+    res.json(await attachSignedImages(shoe));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

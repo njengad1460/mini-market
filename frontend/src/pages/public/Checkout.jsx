@@ -9,23 +9,52 @@ export default function Checkout() {
   const { items, fetchCart, total } = useCartStore();
   const { user }                    = useAuthStore();
   const navigate                    = useNavigate();
-  const [customer, setCustomer]     = useState(null);
+  const [customer, setCustomer]     = useState(user ? undefined : null);
   const [paymentType, setPaymentType] = useState('full');
   const [walletDiscount, setWalletDiscount] = useState(0);
   const [orderType, setOrderType]   = useState('direct');
+  const [guestPhone, setGuestPhone] = useState('');
   const [loading, setLoading]       = useState(false);
 
   useEffect(() => {
     fetchCart();
-    client.get('/api/auth/sync', { method: 'POST' });
-    // fetch customer profile for wallet balance
-    client.post('/api/auth/sync').then(r => setCustomer(r.data.customer)).catch(() => {});
-  }, []);
+  }, [fetchCart]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!user) return undefined;
+
+    client.post('/api/auth/sync')
+      .then((r) => {
+        if (cancelled) return;
+        setCustomer(r.data.customer || null);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setCustomer(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const grandTotal = total() - walletDiscount;
+  const showGuestPhone = !user;
+  const waitingOnCustomer = !!user && customer === undefined;
 
   const handleOrder = async () => {
     if (items.length === 0) return;
+    if (showGuestPhone && !guestPhone.trim()) {
+      alert('Please enter a phone number');
+      return;
+    }
+    if (waitingOnCustomer) {
+      alert('We are still loading your profile. Please try again in a moment.');
+      return;
+    }
+
     setLoading(true);
     try {
       const orderItems = items.map((i) => ({
@@ -40,7 +69,7 @@ export default function Checkout() {
         paymentType,
         orderType,
         walletDiscount,
-        customerId:     customer?._id,
+        guestPhone:     showGuestPhone ? guestPhone.trim() : '',
       });
 
       navigate('/order-success');
@@ -125,7 +154,7 @@ export default function Checkout() {
       </div>
 
       {/* wallet discount */}
-      {customer?.walletBalance > 0 && (
+      {customer && customer !== false && customer.walletBalance > 0 && (
         <div className="border rounded-xl p-4 space-y-2">
           <p className="font-semibold">Wallet Balance: Ksh {customer.walletBalance}</p>
           <input
@@ -139,6 +168,21 @@ export default function Checkout() {
         </div>
       )}
 
+      {/* guest phone if not logged in */}
+      {showGuestPhone && (
+        <div className="border rounded-xl p-4 space-y-2">
+          <p className="font-semibold">Contact Details</p>
+          <input
+            type="tel"
+            placeholder="Phone Number (e.g. 07...)"
+            value={guestPhone}
+            onChange={(e) => setGuestPhone(e.target.value)}
+            className="w-full border rounded-xl px-4 py-2 text-sm"
+            required
+          />
+        </div>
+      )}
+
       {/* grand total */}
       <div className="flex justify-between text-xl font-bold px-1">
         <span>Grand Total</span>
@@ -147,10 +191,10 @@ export default function Checkout() {
 
       <button
         onClick={handleOrder}
-        disabled={loading}
+        disabled={loading || waitingOnCustomer}
         className="w-full bg-black text-white py-3 rounded-xl font-semibold"
       >
-        {loading ? 'Placing Order...' : 'Place Order'}
+        {loading ? 'Placing Order...' : waitingOnCustomer ? 'Loading Profile...' : 'Place Order'}
       </button>
     </div>
   );

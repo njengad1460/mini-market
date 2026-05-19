@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
 import useAuthStore from './store/authStore.js';
 import useCartStore from './store/cartStore.js';
+import useI18n from './i18n/index.js';
 import Toast from './components/Toast.jsx';
 
 import Catalog          from './pages/public/Catalog.jsx';
@@ -32,6 +33,14 @@ function StaffRoute({ children }) {
   return children;
 }
 
+function CustomerRoute({ children }) {
+  const { user, role, loading } = useAuthStore();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (role !== 'customer') return <Navigate to={role === 'admin' || role === 'staff' ? '/dashboard' : '/'} replace />;
+  return children;
+}
+
 // Protects routes that require admin only
 function AdminRoute({ children }) {
   const { user, role, loading } = useAuthStore();
@@ -41,77 +50,142 @@ function AdminRoute({ children }) {
 }
 
 function Navbar() {
-  const { user, role, logout } = useAuthStore();
+  const { user, role, loading, logout } = useAuthStore();
   const items                  = useCartStore((s) => s.items);
+  const lang                   = useI18n((s) => s.lang);
+  const setLang                = useI18n((s) => s.setLang);
+  const t                      = useI18n((s) => s.t);
   const navigate               = useNavigate();
 
   const handleLogout = async () => { await logout(); navigate('/'); };
 
   return (
-    <nav className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-white z-10">
-      <Link to="/" className="font-bold text-lg">👟 Narok Shoes</Link>
-      <div className="flex items-center gap-4 text-sm">
-        <Link to="/request-shoe">Request Shoe</Link>
-        {user && role === 'customer' && (
-          <Link to="/settings">Settings</Link>
-        )}
-        {(role === 'staff' || role === 'admin') && (
-          <Link to="/dashboard" className="text-blue-600 font-medium">Dashboard</Link>
-        )}
-        <Link to="/cart" className="relative">
-          🛒
-          {items.length > 0 && (
-            <span className="absolute -top-1 -right-2 bg-black text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-              {items.length}
-            </span>
-          )}
-        </Link>
-        {user ? (
-          <button onClick={handleLogout} className="text-gray-500">Logout</button>
-        ) : (
-          <Link to="/login" className="bg-black text-white px-3 py-1.5 rounded-lg">Login</Link>
-        )}
+    <header className="sticky top-0 z-20 border-b border-[var(--color-border)] backdrop-blur-md">
+      <div className="bg-[#ffa726] text-[#212121]">
+        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-2 text-sm font-semibold sm:flex-row sm:items-center sm:justify-between">
+          <p>{t('nav.promo')}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-extrabold">{t('nav.deliveryTag')}</span>
+            <Link to="/request-shoe" className="rounded-full bg-white px-4 py-1.5 text-xs font-bold transition hover:bg-[#fff5e6]">
+              {t('nav.shopNow')}
+            </Link>
+          </div>
+        </div>
       </div>
-    </nav>
+
+      <nav className="bg-[rgba(250,248,243,0.94)]">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center justify-between gap-3">
+            <Link to="/" className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--color-primary)] text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(46,125,50,0.22)]">
+                NS
+              </div>
+              <div>
+                <p className="text-lg font-extrabold tracking-tight">Narok Shoes</p>
+                <p className="text-xs text-[#5b5b5b]">{t('nav.subtitle')}</p>
+              </div>
+            </Link>
+
+            <Link
+              to="/cart"
+              className="relative rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm font-semibold lg:hidden"
+            >
+              {t('nav.cart')}
+              {items.length > 0 && (
+                <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-[var(--color-primary)] px-1.5 py-0.5 text-center text-[11px] text-white">
+                  {items.length}
+                </span>
+              )}
+            </Link>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 text-sm text-[#3f3f3f]">
+            <Link to="/" className="rounded-full px-3 py-2 transition hover:bg-white">{t('nav.home')}</Link>
+            <Link to="/request-shoe" className="rounded-full px-3 py-2 transition hover:bg-white">{t('nav.requestShoe')}</Link>
+            {user && role === 'customer' && (
+              <Link to="/settings" className="rounded-full px-3 py-2 transition hover:bg-white">{t('nav.settings')}</Link>
+            )}
+            {(role === 'staff' || role === 'admin') && (
+              <Link to="/dashboard" className="rounded-full px-3 py-2 font-semibold text-[var(--color-primary)] transition hover:bg-white">
+                Dashboard
+              </Link>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setLang(lang === 'en' ? 'sw' : 'en')}
+              className="soft-button rounded-full px-4 py-2 text-sm font-semibold"
+            >
+              {lang === 'en' ? 'Kiswahili' : 'English'}
+            </button>
+
+            <Link
+              to="/cart"
+              className="relative hidden rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm font-semibold transition hover:border-[var(--color-primary)] lg:inline-flex"
+            >
+              {t('nav.cart')}
+              {items.length > 0 && (
+                <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-[var(--color-primary)] px-1.5 py-0.5 text-center text-[11px] text-white">
+                  {items.length}
+                </span>
+              )}
+            </Link>
+
+            {loading ? null : user ? (
+              <button onClick={handleLogout} className="rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm font-semibold text-[#5b5b5b] transition hover:border-[var(--color-primary)]">
+                {t('nav.logout')}
+              </button>
+            ) : (
+              <Link to="/login" className="cta-button rounded-full px-5 py-2.5 text-sm font-bold transition">
+                {t('nav.login')}
+              </Link>
+            )}
+          </div>
+        </div>
+      </nav>
+    </header>
   );
 }
 
 export default function App() {
   const init = useAuthStore((s) => s.init);
 
-  useEffect(() => { init(); }, []);
+  useEffect(() => { init(); }, [init]);
 
   return (
     <BrowserRouter>
       <Navbar />
       <Toast />
-      <Routes>
-        {/* public */}
-        <Route path="/"             element={<Catalog />} />
-        <Route path="/shoes/:id"    element={<ProductDetail />} />
-        <Route path="/cart"         element={<Cart />} />
-        <Route path="/request-shoe" element={<RequestShoe />} />
-        <Route path="/login"            element={<Login />} />
-        <Route path="/signup"           element={<Signup />} />
-        <Route path="/complete-profile" element={<CompleteProfile />} />
-        <Route path="/checkout"         element={<Checkout />} />
-        <Route path="/order-success"    element={<OrderSuccess />} />
-        <Route path="/settings"         element={<SettingsPage />} />
+      <main className="pb-10">
+        <Routes>
+          {/* public */}
+          <Route path="/"             element={<Catalog />} />
+          <Route path="/shoes/:id"    element={<ProductDetail />} />
+          <Route path="/cart"         element={<Cart />} />
+          <Route path="/request-shoe" element={<RequestShoe />} />
+          <Route path="/login"            element={<Login />} />
+          <Route path="/signup"           element={<Signup />} />
+          <Route path="/complete-profile" element={<CompleteProfile />} />
+          <Route path="/checkout"         element={<Checkout />} />
+          <Route path="/order-success"    element={<OrderSuccess />} />
+          <Route path="/settings"         element={<CustomerRoute><SettingsPage /></CustomerRoute>} />
 
-        {/* staff + admin */}
-        <Route path="/dashboard" element={<StaffRoute><Dashboard /></StaffRoute>} />
-        <Route path="/dashboard/orders" element={<StaffRoute><OrdersPage /></StaffRoute>} />
-        <Route path="/dashboard/orders/:id" element={<StaffRoute><OrderDetailPage /></StaffRoute>} />
-        <Route path="/dashboard/customers" element={<StaffRoute><CustomersPage /></StaffRoute>} />
-        <Route path="/dashboard/customers/:id" element={<StaffRoute><CustomerDetailPage /></StaffRoute>} />
-        <Route path="/dashboard/inventory" element={<StaffRoute><InventoryPage /></StaffRoute>} />
-        <Route path="/dashboard/special-orders" element={<StaffRoute><SpecialOrdersPage /></StaffRoute>} />
-        <Route path="/dashboard/cash"           element={<StaffRoute><CashFloatPage /></StaffRoute>} />
+          {/* staff + admin */}
+          <Route path="/dashboard" element={<StaffRoute><Dashboard /></StaffRoute>} />
+          <Route path="/dashboard/orders" element={<StaffRoute><OrdersPage /></StaffRoute>} />
+          <Route path="/dashboard/orders/:id" element={<StaffRoute><OrderDetailPage /></StaffRoute>} />
+          <Route path="/dashboard/customers" element={<StaffRoute><CustomersPage /></StaffRoute>} />
+          <Route path="/dashboard/customers/:id" element={<StaffRoute><CustomerDetailPage /></StaffRoute>} />
+          <Route path="/dashboard/inventory" element={<StaffRoute><InventoryPage /></StaffRoute>} />
+          <Route path="/dashboard/special-orders" element={<StaffRoute><SpecialOrdersPage /></StaffRoute>} />
+          <Route path="/dashboard/cash"           element={<StaffRoute><CashFloatPage /></StaffRoute>} />
 
-        {/* admin only */}
-        <Route path="/dashboard/analytics"    element={<AdminRoute><Analytics /></AdminRoute>} />
-        <Route path="/dashboard/users"        element={<AdminRoute><UserManagementPage /></AdminRoute>} />
-      </Routes>
+          {/* admin only */}
+          <Route path="/dashboard/analytics"    element={<AdminRoute><Analytics /></AdminRoute>} />
+          <Route path="/dashboard/users"        element={<AdminRoute><UserManagementPage /></AdminRoute>} />
+        </Routes>
+      </main>
     </BrowserRouter>
   );
 }

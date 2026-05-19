@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { getCustomer } from '../../api/customers.js';
+import { getCustomer, updateCustomerBalance } from '../../api/customers.js';
 import { getOrders } from '../../api/orders.js';
 import { ListItemSkeleton } from '../../components/Skeleton.jsx';
 import { Link } from 'react-router-dom';
+import useToastStore from '../../store/toastStore.js';
 
 const statusColors = {
   pending:           'bg-yellow-100 text-yellow-700',
@@ -12,9 +13,12 @@ const statusColors = {
 };
 
 export default function CustomerProfile({ customerId }) {
+  const toast = useToastStore((s) => s.show);
   const [customer, setCustomer] = useState(null);
   const [orders, setOrders]     = useState([]);
   const [loading, setLoading]   = useState(true);
+  const [balanceForm, setBalanceForm] = useState({ type: 'credit', amount: '', note: '' });
+  const [savingBalance, setSavingBalance] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -38,15 +42,40 @@ export default function CustomerProfile({ customerId }) {
   const totalSpent  = orders.reduce((s, o) => s + o.paidAmount, 0);
   const creditOrders = orders.filter(o => o.paymentType === 'credit' && o.status !== 'delivered');
 
+  const handleBalanceUpdate = async (e) => {
+    e.preventDefault();
+    setSavingBalance(true);
+    try {
+      const updated = await updateCustomerBalance(customerId, {
+        ...balanceForm,
+        amount: Number(balanceForm.amount),
+      });
+      setCustomer(updated);
+      setBalanceForm({ type: 'credit', amount: '', note: '' });
+      toast('Customer balance updated');
+    } catch (err) {
+      toast(err.response?.data?.message || 'Failed to update balance', 'error');
+    } finally {
+      setSavingBalance(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* profile card */}
-      <div className="border rounded-xl p-4 space-y-1">
+      <div className="surface-card rounded-[2rem] p-5 space-y-2">
         <div className="flex justify-between items-start">
-          <div>
+          <div className="flex items-start gap-4">
+            <img
+              src={customer.profileImage || '/placeholder.png'}
+              alt={customer.name}
+              className="h-20 w-20 rounded-[1.3rem] object-cover border border-[var(--color-border)] bg-white"
+            />
+            <div>
             <p className="text-xl font-bold">{customer.name}</p>
             <p className="text-gray-500">{customer.phone}</p>
             {customer.email && <p className="text-sm text-gray-400">{customer.email}</p>}
+            </div>
           </div>
           <span className={`text-xs px-2 py-1 rounded-full ${
             customer.registrationType === 'walkin'
@@ -66,19 +95,58 @@ export default function CustomerProfile({ customerId }) {
 
       {/* stats */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="border rounded-xl p-3 text-center">
+        <div className="surface-card rounded-[1.5rem] p-3 text-center">
           <p className="text-2xl font-bold">{orders.length}</p>
           <p className="text-xs text-gray-500">Orders</p>
         </div>
-        <div className="border rounded-xl p-3 text-center">
+        <div className="surface-card rounded-[1.5rem] p-3 text-center">
           <p className="text-2xl font-bold text-green-600">{totalSpent.toLocaleString()}</p>
           <p className="text-xs text-gray-500">Ksh Spent</p>
         </div>
-        <div className="border rounded-xl p-3 text-center">
-          <p className="text-2xl font-bold text-blue-600">{customer.walletBalance}</p>
-          <p className="text-xs text-gray-500">Wallet (Ksh)</p>
+        <div className="surface-card rounded-[1.5rem] p-3 text-center">
+          <p className={`text-2xl font-bold ${customer.shoeBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {customer.shoeBalance.toLocaleString()}
+          </p>
+          <p className="text-xs text-gray-500">Shoe Balance (Ksh)</p>
         </div>
       </div>
+
+      <form onSubmit={handleBalanceUpdate} className="surface-card rounded-[2rem] p-5 space-y-4">
+        <div>
+          <p className="text-lg font-extrabold">Update shoe balance</p>
+          <p className="text-sm text-[#666]">Every change here is logged with the staff member and timestamp.</p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          <select
+            value={balanceForm.type}
+            onChange={(e) => setBalanceForm({ ...balanceForm, type: e.target.value })}
+            className="rounded-2xl border border-[var(--color-border)] bg-white px-4 py-3 text-sm"
+          >
+            <option value="credit">Credit</option>
+            <option value="debit">Debit</option>
+          </select>
+          <input
+            type="number"
+            min="1"
+            placeholder="Amount"
+            value={balanceForm.amount}
+            onChange={(e) => setBalanceForm({ ...balanceForm, amount: e.target.value })}
+            className="rounded-2xl border border-[var(--color-border)] bg-white px-4 py-3 text-sm"
+            required
+          />
+          <button type="submit" disabled={savingBalance} className="cta-button rounded-2xl px-4 py-3 text-sm font-extrabold">
+            {savingBalance ? 'Saving...' : 'Apply update'}
+          </button>
+        </div>
+
+        <textarea
+          placeholder="Reason or note for this balance update"
+          value={balanceForm.note}
+          onChange={(e) => setBalanceForm({ ...balanceForm, note: e.target.value })}
+          className="min-h-24 w-full rounded-2xl border border-[var(--color-border)] bg-white px-4 py-3 text-sm"
+        />
+      </form>
 
       {/* pending credit orders */}
       {creditOrders.length > 0 && (
@@ -97,6 +165,32 @@ export default function CustomerProfile({ customerId }) {
           ))}
         </div>
       )}
+
+      <div className="surface-card rounded-[2rem] p-5">
+        <p className="font-semibold mb-3">Balance history</p>
+        {customer.balanceUpdates?.length ? (
+          <div className="space-y-3">
+            {customer.balanceUpdates.map((entry) => (
+              <div key={entry._id} className="rounded-[1.4rem] border border-[var(--color-border)] bg-white p-4">
+                <div className="flex flex-wrap justify-between gap-3">
+                  <div>
+                    <p className={`font-extrabold ${entry.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
+                      {entry.type === 'credit' ? '+' : '-'}Ksh {entry.amount.toLocaleString()}
+                    </p>
+                    <p className="text-sm text-[#666]">
+                      {entry.updatedBy?.name || 'Staff'} changed balance from Ksh {entry.previousValue.toLocaleString()} to Ksh {entry.newValue.toLocaleString()}
+                    </p>
+                  </div>
+                  <p className="text-xs text-[#7a7a7a]">{new Date(entry.updatedAt).toLocaleString()}</p>
+                </div>
+                {entry.note && <p className="mt-2 text-sm text-[#4f4f4f]">{entry.note}</p>}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-[#666]">No balance updates yet.</p>
+        )}
+      </div>
 
       {/* order history */}
       <div>

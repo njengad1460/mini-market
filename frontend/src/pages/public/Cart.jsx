@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import useCartStore from '../../store/cartStore.js';
 import useAuthStore from '../../store/authStore.js';
 import useI18n from '../../i18n/index.js';
-import { useToastStore } from '../../components/Toast.jsx';
+import useToastStore from '../../store/toastStore.js';
 import { ListItemSkeleton } from '../../components/Skeleton.jsx';
 
 export default function Cart() {
@@ -17,7 +17,7 @@ export default function Cart() {
 
   useEffect(() => {
     fetchCart().finally(() => setLoading(false));
-  }, []);
+  }, [fetchCart]);
 
   const handleRemove = async (shoeId, size) => {
     setRemoving(`${shoeId}-${size}`);

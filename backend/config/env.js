@@ -16,6 +16,12 @@ export const ENV = {
   // AWS credentials for Cognito admin operations
   AWS_ACCESS_KEY_ID:     process.env.AWS_ACCESS_KEY_ID,
   AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
+  AWS_REGION: process.env.AWS_REGION || process.env.COGNITO_REGION || 'us-east-1',
+
+  // AWS S3
+  S3_REGION: (process.env.S3_REGION || process.env.AWS_REGION || process.env.COGNITO_REGION || 'us-east-1').trim(),
+  S3_BUCKET_NAME: process.env.S3_BUCKET_NAME?.trim(),
+  S3_PUBLIC_BASE_URL: process.env.S3_PUBLIC_BASE_URL?.trim(),
 
   // WhatsApp
   WHATSAPP_API_URL:   process.env.WHATSAPP_API_URL,

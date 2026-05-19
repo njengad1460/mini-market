@@ -31,10 +31,15 @@ export default function Dashboard() {
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
       {role === 'admin' && stats && (
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid gap-4 mb-8 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard label="Total Orders"    value={stats.totalOrders} />
           <StatCard label="Total Customers" value={stats.totalCustomers} />
           <StatCard label="Revenue (Ksh)"   value={stats.totalRevenue.toLocaleString()} />
+          <StatCard label="Invested (Ksh)"  value={stats.totalInvested.toLocaleString()} />
+          <StatCard label="Sold (Ksh)"      value={stats.totalSold.toLocaleString()} />
+          <StatCard label="Outstanding Credit (Ksh)" value={stats.totalOutstandingCredit.toLocaleString()} />
+          <StatCard label="Customer Credits (Ksh)" value={stats.totalCustomerCredits.toLocaleString()} />
+          <StatCard label="Customer Debits (Ksh)" value={stats.totalCustomerDebits.toLocaleString()} />
         </div>
       )}
 

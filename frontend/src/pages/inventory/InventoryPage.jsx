@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import client from '../../api/client.js';
-import { useToastStore } from '../../components/Toast.jsx';
+import useToastStore from '../../store/toastStore.js';
 import InventoryTable from '../../features/inventory/InventoryTable.jsx';
 import LowStockAlert from '../../features/inventory/LowStockAlert.jsx';
 
@@ -9,11 +9,21 @@ export default function InventoryPage() {
   const [shoes, setShoes]     = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm]       = useState({ name: '', brand: '', price: '', costPrice: '', category: '' });
+  const [form, setForm]       = useState({ name: '', brand: '', price: '', costPrice: '', category: '', sizes: '', initialStock: '' });
+  const [imageFiles, setImageFiles] = useState([]);
   const [saving, setSaving]   = useState(false);
 
-  const fetchShoes = () =>
-    client.get('/api/products/admin').then(r => { setShoes(r.data); setLoading(false); });
+  const fetchShoes = async () => {
+    try {
+      setLoading(true);
+      const response = await client.get('/api/products/admin');
+      setShoes(response.data);
+    } catch (err) {
+      toast(err.response?.data?.message || 'Failed to load inventory', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => { fetchShoes(); }, []);
 
@@ -21,16 +31,31 @@ export default function InventoryPage() {
     e.preventDefault();
     setSaving(true);
     try {
+      const initStock = Number(form.initialStock) || 0;
+      const parsedSizes = form.sizes 
+        ? form.sizes.split(',').map(s => ({ size: s.trim(), stock: initStock })).filter(s => s.size)
+        : [];
+      const imageUploads = await Promise.all(
+        imageFiles.map(async (file) => {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('folder', 'products');
+          const { data } = await client.post('/api/upload', formData);
+          return data.url;
+        })
+      );
       await client.post('/api/products', {
         ...form,
         price:     Number(form.price),
         costPrice: Number(form.costPrice),
-        sizes:     [],
+        sizes:     parsedSizes,
+        images:    imageUploads,
       });
       toast('Product added ✓');
       fetchShoes();
       setShowForm(false);
-      setForm({ name: '', brand: '', price: '', costPrice: '', category: '' });
+      setForm({ name: '', brand: '', price: '', costPrice: '', category: '', sizes: '', initialStock: '' });
+      setImageFiles([]);
     } catch (err) {
       toast(err.response?.data?.message || 'Failed to add product', 'error');
     } finally {
@@ -84,6 +109,37 @@ export default function InventoryPage() {
               className="border rounded-xl px-4 py-2 text-sm"
               required
             />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              type="text"
+              placeholder="Sizes (e.g. 40, 41)"
+              value={form.sizes}
+              onChange={(e) => setForm({ ...form, sizes: e.target.value })}
+              className="border rounded-xl px-4 py-2 text-sm"
+            />
+            <input
+              type="number"
+              placeholder="Initial Stock per size"
+              value={form.initialStock}
+              onChange={(e) => setForm({ ...form, initialStock: e.target.value })}
+              className="border rounded-xl px-4 py-2 text-sm"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Product Images</label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => setImageFiles(Array.from(e.target.files || []))}
+              className="w-full border rounded-xl px-4 py-2 text-sm"
+            />
+            {imageFiles.length > 0 && (
+              <div className="rounded-xl bg-gray-50 px-3 py-2 text-xs text-gray-600">
+                {imageFiles.length} image{imageFiles.length > 1 ? 's' : ''} selected
+              </div>
+            )}
           </div>
           <button
             type="submit"

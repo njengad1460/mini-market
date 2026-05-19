@@ -14,7 +14,7 @@ const installmentSchema = new mongoose.Schema({
 }, { _id: false });
 
 const orderSchema = new mongoose.Schema({
-  customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
+  customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer' },
 
   // guest walkin — phone only, no account
   guestPhone: { type: String },

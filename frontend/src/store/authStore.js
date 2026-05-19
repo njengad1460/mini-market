@@ -28,16 +28,30 @@ const useAuthStore = create((set) => ({
       const groups      = session.tokens?.idToken?.payload['cognito:groups'] || []
       const role        = groups[0] || 'customer'
 
-      // sync to MongoDB on every session restore
-      if (token) await syncWithBackend(token)
-
       set({ user: { userId, ...attributes }, role, loading: false })
+
+      // Keep the user logged in even if backend sync has a temporary failure.
+      if (token) {
+        try {
+          await syncWithBackend(token)
+        } catch (error) {
+          console.error('Failed to sync authenticated user with backend:', error)
+        }
+      }
     } catch {
       set({ user: null, role: null, loading: false })
     }
   },
 
   login: async (email, password) => {
+    try {
+      await getCurrentUser()
+      await useAuthStore.getState().init()
+      return
+    } catch {
+      // no active session, continue with sign in
+    }
+
     await signIn({ username: email, password })
     await useAuthStore.getState().init()
   },

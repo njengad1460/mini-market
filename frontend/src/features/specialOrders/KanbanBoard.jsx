@@ -1,5 +1,5 @@
 import { updateSpecialOrderStatus } from '../../api/specialOrders.js';
-import { useToastStore } from '../../components/Toast.jsx';
+import useToastStore from '../../store/toastStore.js';
 
 const COLUMNS = [
   { key: 'pending',   label: '📥 Pending',   color: 'border-yellow-300 bg-yellow-50' },

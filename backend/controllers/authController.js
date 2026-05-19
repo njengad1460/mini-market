@@ -2,6 +2,14 @@ import Customer from '../models/Customer.js';
 import User from '../models/User.js';
 import { nanoid } from 'nanoid';
 
+const generateUniqueReferralCode = async () => {
+  let code = nanoid(8).toUpperCase();
+  while (await Customer.exists({ referralCode: code })) {
+    code = nanoid(8).toUpperCase();
+  }
+  return code;
+};
+
 // Called after Cognito login — syncs user to MongoDB
 export const syncUser = async (req, res) => {
   const { cognitoSub, email, name, phone, role } = req.user;
@@ -39,7 +47,7 @@ export const syncUser = async (req, res) => {
         email,
         phone:            phone || '',
         registrationType: 'registered',
-        referralCode:     nanoid(8),
+        referralCode:     await generateUniqueReferralCode(),
         profileComplete:  !!phone,
         referredBy:       referrer?._id || null,
       });

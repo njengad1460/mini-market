@@ -20,7 +20,7 @@ export default function RequestShoe() {
 
       await client.post('/api/special-orders', { photoUrl: url, description });
       setSubmitted(true);
-    } catch (err) {
+    } catch {
       alert('Failed to submit. Please try again.');
     } finally {
       setLoading(false);

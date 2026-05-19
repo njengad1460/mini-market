@@ -6,14 +6,31 @@ import { applyReferralBonus } from './customerController.js';
 
 // Place a new order
 export const placeOrder = async (req, res) => {
-  const { customerId, guestPhone, items, paymentType, orderType, walletDiscount } = req.body;
+  const { guestPhone, items, paymentType, orderType, walletDiscount } = req.body;
 
   try {
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ message: 'Order must include at least one item' });
+    }
+
+    let customer = null;
+    if (req.user?.cognitoSub) {
+      customer = await Customer.findOne({ cognitoSub: req.user.cognitoSub });
+      if (req.user.role === 'customer' && !customer) {
+        return res.status(409).json({ message: 'Customer profile not ready yet. Please try again.' });
+      }
+    }
+
+    const normalizedGuestPhone = guestPhone?.trim();
+    if (!customer && !normalizedGuestPhone) {
+      return res.status(400).json({ message: 'Guest phone number is required' });
+    }
+
     const totalAmount = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
     const order = await Order.create({
-      customer:      customerId,
-      guestPhone,
+      customer:      customer?._id,
+      guestPhone:    customer ? undefined : normalizedGuestPhone,
       items,
       orderType:     orderType || 'direct',
       paymentType:   paymentType || 'full',
@@ -22,13 +39,13 @@ export const placeOrder = async (req, res) => {
     });
 
     // deduct wallet discount from customer balance
-    if (walletDiscount && customerId) {
-      await Customer.findByIdAndUpdate(customerId, { $inc: { walletBalance: -walletDiscount } });
+    if (walletDiscount && customer?._id) {
+      await Customer.findByIdAndUpdate(customer._id, { $inc: { walletBalance: -walletDiscount } });
     }
 
     // trigger referral bonus if order > 999
-    if (totalAmount > 999 && customerId) {
-      await applyReferralBonus(customerId);
+    if (totalAmount > 999 && customer?._id) {
+      await applyReferralBonus(customer._id);
     }
 
     res.status(201).json(order);
@@ -134,6 +151,8 @@ export const getOrders = async (req, res) => {
 export const getMyOrders = async (req, res) => {
   try {
     const customer = await Customer.findOne({ cognitoSub: req.user.cognitoSub });
+    if (!customer) return res.json([]);
+
     const orders   = await Order.find({ customer: customer._id })
       .populate('items.shoe', 'name images')
       .sort('-createdAt');

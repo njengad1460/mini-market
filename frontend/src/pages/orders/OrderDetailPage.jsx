@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import client from '../../api/client.js';
 import { recordDelivery, payInstallment, applyDiscount } from '../../api/orders.js';
@@ -17,10 +17,15 @@ export default function OrderDetailPage() {
   const [installmentRef, setInstallmentRef]       = useState('');
   const [discount, setDiscount]   = useState('');
 
-  const fetchOrder = () =>
-    client.get(`/api/orders/${id}`).then(r => { setOrder(r.data); setLoading(false); });
+  const fetchOrder = useCallback(
+    () => client.get(`/api/orders/${id}`).then((r) => {
+      setOrder(r.data);
+      setLoading(false);
+    }),
+    [id]
+  );
 
-  useEffect(() => { fetchOrder(); }, [id]);
+  useEffect(() => { fetchOrder(); }, [fetchOrder]);
 
   if (loading || !order) return <div className="p-8 text-center">Loading...</div>;
 

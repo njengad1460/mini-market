@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import client from '../../api/client.js';
-import { useToastStore } from '../../components/Toast.jsx';
+import useToastStore from '../../store/toastStore.js';
 
 const roleColors = {
   admin:    'bg-purple-100 text-purple-700',

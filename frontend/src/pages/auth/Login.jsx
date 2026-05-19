@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { signInWithRedirect, resetPassword, confirmResetPassword } from 'aws-amplify/auth';
+import { signInWithRedirect, resetPassword, confirmResetPassword, getCurrentUser } from 'aws-amplify/auth';
 import useAuthStore from '../../store/authStore.js';
 import useI18n from '../../i18n/index.js';
 
@@ -16,6 +16,12 @@ export default function Login() {
   const { login }               = useAuthStore();
   const navigate                = useNavigate();
   const t                       = useI18n((s) => s.t);
+
+  useEffect(() => {
+    getCurrentUser()
+      .then(() => navigate('/', { replace: true }))
+      .catch(() => {});
+  }, [navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -224,14 +230,32 @@ export default function Login() {
 
         <div className="space-y-3">
           <button
-            onClick={() => signInWithRedirect({ provider: 'Google' })}
+            onClick={async () => {
+              setError('');
+              try {
+                await getCurrentUser();
+                navigate('/', { replace: true });
+                return;
+              } catch {
+                await signInWithRedirect({ provider: 'Google' });
+              }
+            }}
             className="w-full border py-3 rounded-xl font-medium flex items-center justify-center gap-2"
           >
             <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="" />
             {t('auth.google')}
           </button>
           <button
-            onClick={() => signInWithRedirect({ provider: 'Facebook' })}
+            onClick={async () => {
+              setError('');
+              try {
+                await getCurrentUser();
+                navigate('/', { replace: true });
+                return;
+              } catch {
+                await signInWithRedirect({ provider: 'Facebook' });
+              }
+            }}
             className="w-full bg-blue-600 text-white py-3 rounded-xl font-medium"
           >
             {t('auth.facebook')}

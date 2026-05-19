@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { getCustomers, registerWalkin } from '../../api/customers.js';
 import CustomerSearch from '../../features/customers/CustomerSearch.jsx';
 import CustomerProfile from '../../features/customers/CustomerProfile.jsx';
-import { useToastStore } from '../../components/Toast.jsx';
+import useToastStore from '../../store/toastStore.js';
 
 // Customer detail view
 export function CustomerDetailPage() {
@@ -134,17 +134,24 @@ export default function CustomersPage() {
       {/* list */}
       <div className="space-y-2">
         {customers.map((c) => (
-          <a
+          <Link
             key={c._id}
-            href={`/dashboard/customers/${c._id}`}
+            to={`/dashboard/customers/${c._id}`}
             className="flex justify-between items-center border rounded-xl p-4 hover:bg-gray-50"
           >
-            <div>
-              <p className="font-semibold">{c.name}</p>
-              <p className="text-sm text-gray-500">{c.phone}</p>
-              {c.location?.address && (
-                <p className="text-xs text-gray-400">📍 {c.location.address}</p>
-              )}
+            <div className="flex items-center gap-3">
+              <img
+                src={c.profileImage || '/placeholder.png'}
+                alt={c.name}
+                className="h-14 w-14 rounded-2xl object-cover border border-[var(--color-border)] bg-white"
+              />
+              <div>
+                <p className="font-semibold">{c.name}</p>
+                <p className="text-sm text-gray-500">{c.phone}</p>
+                {c.location?.address && (
+                  <p className="text-xs text-gray-400">📍 {c.location.address}</p>
+                )}
+              </div>
             </div>
             <div className="flex flex-col items-end gap-1">
               <span className={`text-xs px-2 py-0.5 rounded-full ${
@@ -157,8 +164,11 @@ export default function CustomersPage() {
               {c.registeredBy && (
                 <p className="text-xs text-gray-400">by {c.registeredBy.name}</p>
               )}
+              <p className={`text-xs font-semibold ${c.shoeBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                Balance: Ksh {c.shoeBalance?.toLocaleString?.() || 0}
+              </p>
             </div>
-          </a>
+          </Link>
         ))}
       </div>
     </div>

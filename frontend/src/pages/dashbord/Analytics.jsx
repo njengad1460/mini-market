@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { getStaffPerformance, getAuditLogs } from '../../api/analytics.js';
+import { getOverview, getStaffPerformance, getAuditLogs } from '../../api/analytics.js';
 
 export default function Analytics() {
+  const [overview, setOverview] = useState(null);
   const [performance, setPerformance] = useState(null);
   const [logs, setLogs]               = useState([]);
 
   useEffect(() => {
+    getOverview().then(setOverview);
     getStaffPerformance().then(setPerformance);
     getAuditLogs().then(setLogs);
   }, []);
@@ -13,6 +15,35 @@ export default function Analytics() {
   return (
     <div className="p-4 max-w-4xl mx-auto space-y-8">
       <h1 className="text-2xl font-bold">Analytics</h1>
+
+      {overview && (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="surface-card rounded-[1.5rem] p-4">
+            <p className="text-sm text-[#666]">Total invested</p>
+            <p className="mt-2 text-2xl font-extrabold">Ksh {overview.totalInvested.toLocaleString()}</p>
+          </div>
+          <div className="surface-card rounded-[1.5rem] p-4">
+            <p className="text-sm text-[#666]">Total sold</p>
+            <p className="mt-2 text-2xl font-extrabold">Ksh {overview.totalSold.toLocaleString()}</p>
+          </div>
+          <div className="surface-card rounded-[1.5rem] p-4">
+            <p className="text-sm text-[#666]">Outstanding credit</p>
+            <p className="mt-2 text-2xl font-extrabold">Ksh {overview.totalOutstandingCredit.toLocaleString()}</p>
+          </div>
+          <div className="surface-card rounded-[1.5rem] p-4">
+            <p className="text-sm text-[#666]">Customer credits</p>
+            <p className="mt-2 text-2xl font-extrabold">Ksh {overview.totalCustomerCredits.toLocaleString()}</p>
+          </div>
+          <div className="surface-card rounded-[1.5rem] p-4">
+            <p className="text-sm text-[#666]">Customer debits</p>
+            <p className="mt-2 text-2xl font-extrabold">Ksh {overview.totalCustomerDebits.toLocaleString()}</p>
+          </div>
+          <div className="surface-card rounded-[1.5rem] p-4">
+            <p className="text-sm text-[#666]">Collected revenue</p>
+            <p className="mt-2 text-2xl font-extrabold">Ksh {overview.totalRevenue.toLocaleString()}</p>
+          </div>
+        </div>
+      )}
 
       {/* staff performance */}
       {performance && (

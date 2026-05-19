@@ -1,11 +1,11 @@
 export function ShoeCardSkeleton() {
   return (
-    <div className="border rounded-xl overflow-hidden animate-pulse">
-      <div className="w-full h-48 bg-gray-200" />
-      <div className="p-3 space-y-2">
-        <div className="h-4 bg-gray-200 rounded w-3/4" />
-        <div className="h-4 bg-gray-200 rounded w-1/3" />
-        <div className="h-8 bg-gray-200 rounded mt-2" />
+    <div className="surface-card overflow-hidden rounded-[1.75rem] animate-pulse">
+      <div className="h-52 w-full bg-[#e9efe4]" />
+      <div className="space-y-3 p-4">
+        <div className="h-4 w-3/4 rounded bg-[#e9efe4]" />
+        <div className="h-3 w-1/3 rounded bg-[#edf3e8]" />
+        <div className="h-9 rounded-2xl bg-[#e1ecdc]" />
       </div>
     </div>
   );
@@ -13,11 +13,11 @@ export function ShoeCardSkeleton() {
 
 export function ListItemSkeleton() {
   return (
-    <div className="border rounded-xl p-4 animate-pulse flex gap-3">
-      <div className="w-16 h-16 bg-gray-200 rounded-lg" />
+    <div className="surface-card flex gap-3 rounded-[1.5rem] p-4 animate-pulse">
+      <div className="h-16 w-16 rounded-2xl bg-[#e9efe4]" />
       <div className="flex-1 space-y-2">
-        <div className="h-4 bg-gray-200 rounded w-1/2" />
-        <div className="h-3 bg-gray-200 rounded w-1/3" />
+        <div className="h-4 w-1/2 rounded bg-[#e9efe4]" />
+        <div className="h-3 w-1/3 rounded bg-[#edf3e8]" />
       </div>
     </div>
   );
@@ -27,7 +27,7 @@ export function TextSkeleton({ lines = 3 }) {
   return (
     <div className="space-y-2 animate-pulse">
       {Array.from({ length: lines }).map((_, i) => (
-        <div key={i} className={`h-4 bg-gray-200 rounded ${i === lines - 1 ? 'w-2/3' : 'w-full'}`} />
+        <div key={i} className={`h-4 rounded bg-[#e9efe4] ${i === lines - 1 ? 'w-2/3' : 'w-full'}`} />
       ))}
     </div>
   );

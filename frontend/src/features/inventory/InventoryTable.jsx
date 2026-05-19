@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import client from '../../api/client.js';
 import useAuthStore from '../../store/authStore.js';
-import { useToastStore } from '../../components/Toast.jsx';
+import useToastStore from '../../store/toastStore.js';
 
 export default function InventoryTable({ shoes, onRefresh }) {
   const { role }          = useAuthStore();
@@ -22,6 +22,22 @@ export default function InventoryTable({ shoes, onRefresh }) {
       setEditStock(null);
     } catch {
       toast('Failed to update stock', 'error');
+    }
+  };
+
+  const [newSize, setNewSize] = useState({}); // { shoeId: { size: '', stock: '' } }
+
+  const handleAddSize = async (shoe, shoeSizes) => {
+    const sizeData = newSize[shoe._id];
+    if (!sizeData?.size || sizeData?.stock === '' || sizeData?.stock == null) return;
+    const updated = [...(shoeSizes || []), { size: sizeData.size, stock: Number(sizeData.stock) }];
+    try {
+      await client.patch(`/api/products/${shoe._id}`, { sizes: updated });
+      toast('Size added ✓');
+      onRefresh();
+      setNewSize({ ...newSize, [shoe._id]: { size: '', stock: '' } });
+    } catch {
+      toast('Failed to add size', 'error');
     }
   };
 
@@ -105,6 +121,28 @@ export default function InventoryTable({ shoes, onRefresh }) {
                   )}
                 </div>
               ))}
+              <div className="border border-dashed border-gray-300 rounded-lg px-2 py-1.5 flex items-center gap-2 text-sm bg-gray-50">
+                <input
+                  type="text"
+                  placeholder="Size"
+                  className="w-12 text-center text-xs bg-transparent outline-none border-b border-gray-300 focus:border-black"
+                  value={newSize[shoe._id]?.size || ''}
+                  onChange={(e) => setNewSize({ ...newSize, [shoe._id]: { ...newSize[shoe._id], size: e.target.value } })}
+                />
+                <input
+                  type="number"
+                  placeholder="Stock"
+                  className="w-12 text-center text-xs bg-transparent outline-none border-b border-gray-300 focus:border-black"
+                  value={newSize[shoe._id]?.stock || ''}
+                  onChange={(e) => setNewSize({ ...newSize, [shoe._id]: { ...newSize[shoe._id], stock: e.target.value } })}
+                />
+                <button
+                  onClick={() => handleAddSize(shoe, shoe.sizes)}
+                  className="text-black font-bold hover:text-green-600 transition-colors"
+                >
+                  +
+                </button>
+              </div>
             </div>
           </div>
         ))}
