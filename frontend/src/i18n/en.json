@@ -1,0 +1,100 @@
+{
+  "nav": {
+    "home": "Home",
+    "cart": "Cart",
+    "requestShoe": "Request Shoe",
+    "login": "Login",
+    "logout": "Logout",
+    "settings": "Settings"
+  },
+  "catalog": {
+    "title": "Our Shoes",
+    "empty": "No shoes found",
+    "addToCart": "Add to Cart",
+    "search": "Search shoes...",
+    "filterSize": "Size",
+    "filterCategory": "Category",
+    "filterPrice": "Max Price",
+    "allCategories": "All Categories",
+    "allSizes": "All Sizes"
+  },
+  "product": {
+    "selectSize": "Select Size",
+    "outOfStock": "Out of Stock",
+    "lipaTitle": "Lipa Pole Pole Available",
+    "lipaDesc": "Pay first installment and receive one shoe. Second shoe delivered on completion.",
+    "share": "Share on WhatsApp",
+    "added": "Added to Cart ✓"
+  },
+  "cart": {
+    "title": "Your Cart",
+    "empty": "Your cart is empty",
+    "browse": "Browse Shoes",
+    "remove": "Remove",
+    "total": "Total",
+    "orderViaWhatsapp": "Order via WhatsApp",
+    "proceedCheckout": "Proceed to Checkout",
+    "phonePlaceholder": "e.g. 0712345678",
+    "phoneLabel": "Enter your phone to order via WhatsApp",
+    "orLogin": "or"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "summary": "Order Summary",
+    "orderType": "Order Type",
+    "buyNow": "Buy Now",
+    "sampleRequest": "Sample Request",
+    "paymentPlan": "Payment Plan",
+    "payFull": "Pay in Full",
+    "lipaPolePole": "Lipa Pole Pole",
+    "lipaNote": "First shoe delivered on first payment. Second shoe on completion.",
+    "wallet": "Wallet Balance",
+    "grandTotal": "Grand Total",
+    "placeOrder": "Place Order",
+    "placing": "Placing Order..."
+  },
+  "auth": {
+    "welcome": "Welcome Back",
+    "createAccount": "Create Account",
+    "email": "Email",
+    "password": "Password",
+    "name": "Full Name",
+    "phone": "Phone Number",
+    "referral": "Referral code (optional)",
+    "login": "Login",
+    "signup": "Sign Up",
+    "noAccount": "No account?",
+    "hasAccount": "Already have an account?",
+    "google": "Continue with Google",
+    "facebook": "Continue with Facebook",
+    "loggingIn": "Logging in...",
+    "creatingAccount": "Creating account..."
+  },
+  "settings": {
+    "title": "Settings",
+    "wallet": "Bonus Wallet",
+    "withdraw": "Withdraw",
+    "withdrawNote": "You can withdraw up to 50% of your balance at a time.",
+    "referralLink": "Your Referral Link",
+    "referralNote": "Earn Ksh 100 for every friend who purchases over Ksh 999.",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "shareWhatsapp": "Share via WhatsApp",
+    "profile": "Profile"
+  },
+  "request": {
+    "title": "Request a Shoe",
+    "desc": "Can't find what you're looking for? Upload a photo and we'll source it for you.",
+    "photo": "Shoe Photo",
+    "description": "Description (optional)",
+    "submit": "Submit Request",
+    "submitting": "Submitting...",
+    "successTitle": "Request submitted!",
+    "successDesc": "Our staff will review and get back to you."
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Try Again"
+  }
+}

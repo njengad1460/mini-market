@@ -3,20 +3,34 @@ import {
   signIn, signOut, signUp, getCurrentUser,
   fetchUserAttributes, fetchAuthSession,
 } from 'aws-amplify/auth'
+import axios from 'axios'
+
+const syncWithBackend = async (token) => {
+  const res = await axios.post(
+    `${import.meta.env.VITE_API_URL}/api/auth/sync`,
+    {},
+    { headers: { Authorization: `Bearer ${token}` } }
+  )
+  return res.data
+}
 
 const useAuthStore = create((set) => ({
   user: null,
   role: null,
   loading: true,
 
-  // Call on app load to restore session
   init: async () => {
     try {
-      const { userId } = await getCurrentUser()
-      const attributes = await fetchUserAttributes()
-      const session = await fetchAuthSession()
-      const groups = session.tokens?.idToken?.payload['cognito:groups'] || []
-      const role = groups[0] || 'customer'
+      const { userId }  = await getCurrentUser()
+      const attributes  = await fetchUserAttributes()
+      const session     = await fetchAuthSession()
+      const token       = session.tokens?.idToken?.toString()
+      const groups      = session.tokens?.idToken?.payload['cognito:groups'] || []
+      const role        = groups[0] || 'customer'
+
+      // sync to MongoDB on every session restore
+      if (token) await syncWithBackend(token)
+
       set({ user: { userId, ...attributes }, role, loading: false })
     } catch {
       set({ user: null, role: null, loading: false })
@@ -28,12 +42,23 @@ const useAuthStore = create((set) => ({
     await useAuthStore.getState().init()
   },
 
-  register: async (email, password, name, phone) => {
+  register: async (email, password, name, phone, referralCode) => {
+    const normalized = phone.startsWith('+') ? phone
+      : phone.startsWith('0') ? '+254' + phone.slice(1)
+      : '+254' + phone
+
+    const username = `user_${Date.now()}`
+
     await signUp({
-      username: email,
+      username,
       password,
-      options: { userAttributes: { email, name, phone_number: phone } },
+      options: {
+        userAttributes: { email, name, phone_number: normalized },
+        clientMetadata: { referralCode: referralCode || '' },
+      },
     })
+
+    sessionStorage.setItem('pendingUsername', username)
   },
 
   logout: async () => {

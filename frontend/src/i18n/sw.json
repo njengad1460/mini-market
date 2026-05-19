@@ -1,0 +1,100 @@
+{
+  "nav": {
+    "home": "Nyumbani",
+    "cart": "Kikapu",
+    "requestShoe": "Omba Kiatu",
+    "login": "Ingia",
+    "logout": "Toka",
+    "settings": "Mipangilio"
+  },
+  "catalog": {
+    "title": "Viatu Vyetu",
+    "empty": "Hakuna viatu vilivyopatikana",
+    "addToCart": "Weka Kikapuni",
+    "search": "Tafuta viatu...",
+    "filterSize": "Nambari",
+    "filterCategory": "Aina",
+    "filterPrice": "Bei ya Juu",
+    "allCategories": "Aina Zote",
+    "allSizes": "Nambari Zote"
+  },
+  "product": {
+    "selectSize": "Chagua Nambari",
+    "outOfStock": "Haipatikani",
+    "lipaTitle": "Lipa Pole Pole Inapatikana",
+    "lipaDesc": "Lipa awali upate kiatu kimoja. Kiatu cha pili utapata baada ya kulipa yote.",
+    "share": "Shiriki WhatsApp",
+    "added": "Imewekwa Kikapuni ✓"
+  },
+  "cart": {
+    "title": "Kikapu Chako",
+    "empty": "Kikapu chako kiko tupu",
+    "browse": "Tazama Viatu",
+    "remove": "Ondoa",
+    "total": "Jumla",
+    "orderViaWhatsapp": "Agiza kupitia WhatsApp",
+    "proceedCheckout": "Endelea Kulipa",
+    "phonePlaceholder": "mfano 0712345678",
+    "phoneLabel": "Weka nambari yako kuagiza kupitia WhatsApp",
+    "orLogin": "au"
+  },
+  "checkout": {
+    "title": "Malipo",
+    "summary": "Muhtasari wa Agizo",
+    "orderType": "Aina ya Agizo",
+    "buyNow": "Nunua Sasa",
+    "sampleRequest": "Omba Sampuli",
+    "paymentPlan": "Mpango wa Malipo",
+    "payFull": "Lipa Yote",
+    "lipaPolePole": "Lipa Pole Pole",
+    "lipaNote": "Kiatu cha kwanza baada ya malipo ya kwanza. Cha pili baada ya kulipa yote.",
+    "wallet": "Salio la Mkoba",
+    "grandTotal": "Jumla Yote",
+    "placeOrder": "Weka Agizo",
+    "placing": "Inaweka Agizo..."
+  },
+  "auth": {
+    "welcome": "Karibu Tena",
+    "createAccount": "Fungua Akaunti",
+    "email": "Barua pepe",
+    "password": "Nywila",
+    "name": "Jina Kamili",
+    "phone": "Nambari ya Simu",
+    "referral": "Nambari ya rufaa (si lazima)",
+    "login": "Ingia",
+    "signup": "Jisajili",
+    "noAccount": "Huna akaunti?",
+    "hasAccount": "Una akaunti tayari?",
+    "google": "Endelea na Google",
+    "facebook": "Endelea na Facebook",
+    "loggingIn": "Inaingia...",
+    "creatingAccount": "Inafungua akaunti..."
+  },
+  "settings": {
+    "title": "Mipangilio",
+    "wallet": "Mkoba wa Bonasi",
+    "withdraw": "Toa Pesa",
+    "withdrawNote": "Unaweza kutoa hadi nusu ya salio lako kwa wakati mmoja.",
+    "referralLink": "Kiungo Chako cha Rufaa",
+    "referralNote": "Pata Ksh 100 kwa kila rafiki anayenunua zaidi ya Ksh 999.",
+    "copy": "Nakili",
+    "copied": "Imenakiliwa!",
+    "shareWhatsapp": "Shiriki WhatsApp",
+    "profile": "Wasifu"
+  },
+  "request": {
+    "title": "Omba Kiatu",
+    "desc": "Hukipata unachotaka? Pakia picha nasi tutakitafutia.",
+    "photo": "Picha ya Kiatu",
+    "description": "Maelezo (si lazima)",
+    "submit": "Tuma Ombi",
+    "submitting": "Inatuma...",
+    "successTitle": "Ombi limetumwa!",
+    "successDesc": "Wafanyakazi wetu watakagua na kukujibu hivi karibuni."
+  },
+  "common": {
+    "loading": "Inapakia...",
+    "error": "Kuna hitilafu",
+    "retry": "Jaribu Tena"
+  }
+}

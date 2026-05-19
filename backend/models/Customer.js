@@ -8,8 +8,8 @@ const customerSchema = new mongoose.Schema({
   cognitoSub: { type: String, sparse: true, unique: true },
 
   name:  { type: String, required: true },
-  phone: { type: String, required: true },
-  email: { type: String, sparse: true },
+  phone: { type: String, required: true, unique: true },
+  email: { type: String, sparse: true, unique: true },
 
   // location — browser geolocation for registered, staff-pinned for walkin
   location: {
