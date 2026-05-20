@@ -18,7 +18,7 @@ const customerSchema = new mongoose.Schema({
   cognitoSub: { type: String, sparse: true, unique: true },
 
   name:  { type: String, required: true },
-  phone: { type: String, required: true, unique: true },
+  phone: { type: String, unique: true, sparse: true },
   email: { type: String, sparse: true, unique: true },
 
   // location — browser geolocation for registered, staff-pinned for walkin
@@ -35,6 +35,8 @@ const customerSchema = new mongoose.Schema({
   referralCode: { type: String, unique: true, sparse: true },
   referredBy:   { type: mongoose.Schema.Types.ObjectId, ref: 'Customer' },
   referralCodeChanged: { type: Boolean, default: false },
+  referralBonusAwardedAt: { type: Date },
+  referralBonusSourceOrder: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
 
   profileImage: { type: String },
 

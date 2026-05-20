@@ -1,5 +1,6 @@
 import Cart from '../models/Cart.js';
 import Customer from '../models/Customer.js';
+import Shoe from '../models/Shoe.js';
 
 const getCartFilter = async (req) => {
   // req.user is set by optionalAuth middleware if token is present
@@ -28,6 +29,16 @@ export const addToCart = async (req, res) => {
   if (!shoeId || !size) return res.status(400).json({ message: 'shoeId and size are required' });
 
   try {
+    const shoe = await Shoe.findById(shoeId);
+    if (!shoe || shoe.status !== 'active') {
+      return res.status(404).json({ message: 'Shoe is not available' });
+    }
+
+    const sizeEntry = (shoe.sizes || []).find((item) => item.size === size);
+    if (!sizeEntry || sizeEntry.stock < (quantity || 1)) {
+      return res.status(400).json({ message: 'Selected shoe size is out of stock' });
+    }
+
     const filter = await getCartFilter(req);
     let cart     = await Cart.findOne(filter);
     if (!cart) cart = await Cart.create({ ...filter, items: [] });
@@ -35,6 +46,11 @@ export const addToCart = async (req, res) => {
     const existing = cart.items.find(
       (i) => i.shoe.toString() === shoeId && i.size === size
     );
+
+    const nextQuantity = (existing?.quantity || 0) + (quantity || 1);
+    if (sizeEntry.stock < nextQuantity) {
+      return res.status(400).json({ message: 'Selected quantity exceeds available stock' });
+    }
 
     if (existing) existing.quantity += quantity || 1;
     else cart.items.push({ shoe: shoeId, size, quantity: quantity || 1 });

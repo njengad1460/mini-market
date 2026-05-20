@@ -71,6 +71,16 @@ a {
   border: 1px solid rgba(102, 187, 106, 0.22);
 }
 
+.bg-black.text-white {
+  background: #255e2c !important;
+  color: #fffdf8 !important;
+  box-shadow: 0 10px 20px rgba(37, 94, 44, 0.18);
+}
+
+.bg-black.text-white:hover {
+  background: #1f4f25 !important;
+}
+
 .accent-badge {
   background: rgba(255, 167, 38, 0.16);
   color: #a85d00;

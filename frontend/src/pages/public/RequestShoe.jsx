@@ -1,24 +1,44 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import client from '../../api/client.js';
 
 export default function RequestShoe() {
+  const [searchParams] = useSearchParams();
+  const soldOutRequest = useMemo(() => ({
+    productId: searchParams.get('productId') || '',
+    productName: searchParams.get('productName') || '',
+  }), [searchParams]);
+  const isSoldOutRequest = Boolean(soldOutRequest.productId || soldOutRequest.productName);
   const [description, setDescription] = useState('');
   const [file, setFile]               = useState(null);
+  const [size, setSize]               = useState(searchParams.get('size') || '');
+  const [color, setColor]             = useState(searchParams.get('color') || '');
   const [submitted, setSubmitted]     = useState(false);
   const [loading, setLoading]         = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!file) return;
     setLoading(true);
 
     try {
-      // upload image to S3 via backend presigned URL then submit special order
-      const formData = new FormData();
-      formData.append('file', file);
-      const { data: { url } } = await client.post('/api/upload', formData);
+      let photoUrl;
 
-      await client.post('/api/special-orders', { photoUrl: url, description });
+      if (!isSoldOutRequest) {
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('file', file);
+        const { data: { url } } = await client.post('/api/upload', formData);
+        photoUrl = url;
+      }
+
+      await client.post('/api/special-orders', {
+        photoUrl,
+        description,
+        productId: soldOutRequest.productId,
+        productName: soldOutRequest.productName,
+        requestedSize: size,
+        requestedColor: color,
+      });
       setSubmitted(true);
     } catch {
       alert('Failed to submit. Please try again.');
@@ -40,27 +60,57 @@ export default function RequestShoe() {
     <div className="p-4 max-w-md mx-auto">
       <h1 className="text-2xl font-bold mb-2">Request a Shoe</h1>
       <p className="text-gray-500 text-sm mb-6">
-        Can't find what you're looking for? Upload a photo and we'll source it for you.
+        {isSoldOutRequest
+          ? `Request ${soldOutRequest.productName || 'this shoe'} in the size and color you want.`
+          : "Can't find what you're looking for? Upload a photo and we'll source it for you."}
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {isSoldOutRequest ? (
+          <div className="rounded-xl border bg-[#f7f6f2] px-4 py-3 text-sm">
+            <p className="font-semibold">{soldOutRequest.productName}</p>
+            <p className="text-gray-500 mt-1">This shoe is sold out, but we can source it for you as a special order.</p>
+          </div>
+        ) : (
+          <div>
+            <label className="block text-sm font-medium mb-1">Shoe Photo</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setFile(e.target.files[0])}
+              className="w-full border rounded-xl px-3 py-2 text-sm"
+              required
+            />
+          </div>
+        )}
+
         <div>
-          <label className="block text-sm font-medium mb-1">Shoe Photo</label>
+          <label className="block text-sm font-medium mb-1">Size</label>
           <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setFile(e.target.files[0])}
+            value={size}
+            onChange={(e) => setSize(e.target.value)}
+            placeholder="e.g. 42"
             className="w-full border rounded-xl px-3 py-2 text-sm"
-            required
+            required={isSoldOutRequest}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Description (optional)</label>
+          <label className="block text-sm font-medium mb-1">Color (optional)</label>
+          <input
+            value={color}
+            onChange={(e) => setColor(e.target.value)}
+            placeholder="e.g. Black"
+            className="w-full border rounded-xl px-3 py-2 text-sm"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Description {isSoldOutRequest ? '(optional)' : '(optional)'}</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="e.g. Black Nike Air Force size 42, for men"
+            placeholder={isSoldOutRequest ? 'Any extra details for the team' : 'e.g. Black Nike Air Force size 42, for men'}
             rows={3}
             className="w-full border rounded-xl px-3 py-2 text-sm"
           />
@@ -68,7 +118,7 @@ export default function RequestShoe() {
 
         <button
           type="submit"
-          disabled={loading || !file}
+          disabled={loading || (!isSoldOutRequest && !file) || (isSoldOutRequest && !size.trim())}
           className="w-full bg-black text-white py-3 rounded-xl font-semibold"
         >
           {loading ? 'Submitting...' : 'Submit Request'}

@@ -15,7 +15,19 @@ export const getOverview = async (req, res) => {
       ]),
       Order.aggregate([
         { $match: { status: { $ne: 'cancelled' } } },
-        { $group: { _id: null, total: { $sum: '$totalAmount' } } },
+        {
+          $group: {
+            _id: null,
+            total: {
+              $sum: {
+                $max: [
+                  { $subtract: ['$totalAmount', { $add: ['$walletDiscount', '$manualDiscount'] }] },
+                  0,
+                ],
+              },
+            },
+          },
+        },
       ]),
       Order.aggregate([
         {
@@ -27,7 +39,19 @@ export const getOverview = async (req, res) => {
         {
           $group: {
             _id: null,
-            total: { $sum: { $max: [{ $subtract: ['$totalAmount', '$paidAmount'] }, 0] } },
+            total: {
+              $sum: {
+                $max: [
+                  {
+                    $subtract: [
+                      { $subtract: ['$totalAmount', { $add: ['$walletDiscount', '$manualDiscount'] }] },
+                      '$paidAmount',
+                    ],
+                  },
+                  0,
+                ],
+              },
+            },
           },
         },
       ]),

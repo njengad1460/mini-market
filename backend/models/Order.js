@@ -8,9 +8,10 @@ const deliverySchema = new mongoose.Schema({
 }, { _id: false });
 
 const installmentSchema = new mongoose.Schema({
-  amount:    { type: Number, required: true },
-  paidAt:    { type: Date, default: Date.now },
-  reference: { type: String }, // M-Pesa or cash ref
+  amount:        { type: Number, required: true },
+  paidAt:        { type: Date, default: Date.now },
+  paymentMethod: { type: String, enum: ['cash', 'mpesa'], required: true },
+  reference:     { type: String }, // M-Pesa or cash ref
 }, { _id: false });
 
 const orderSchema = new mongoose.Schema({
@@ -49,6 +50,7 @@ const orderSchema = new mongoose.Schema({
   },
 
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // null if self-placed
+  stockDeductedAt: { type: Date },
 }, { timestamps: true });
 
 export default mongoose.model('Order', orderSchema);

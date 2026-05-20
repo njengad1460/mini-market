@@ -2,11 +2,20 @@ import mongoose from 'mongoose';
 
 const specialOrderSchema = new mongoose.Schema({
   customer:    { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
-  photoUrl:    { type: String, required: true }, // S3 URL
+  photoUrl:    { type: String }, // S3 URL
+  product:     { type: mongoose.Schema.Types.ObjectId, ref: 'Shoe' },
+  productName: { type: String },
+  requestedSize: { type: String },
+  requestedColor: { type: String },
   description: { type: String },
+  quotedAmount: { type: Number, default: 0 },
+  requiredDeposit: { type: Number, default: 0 },
+  depositPaid: { type: Boolean, default: false },
+  depositPaidAt: { type: Date },
+  depositPaymentMethod: { type: String, enum: ['cash', 'mpesa'] },
   status: {
     type: String,
-    enum: ['pending', 'reviewed', 'fulfilled', 'rejected'],
+    enum: ['pending', 'awaiting_deposit', 'ordered', 'fulfilled', 'rejected'],
     default: 'pending',
   },
   reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import client from '../../api/client.js';
 import useToastStore from '../../store/toastStore.js';
 import InventoryTable from '../../features/inventory/InventoryTable.jsx';
@@ -13,7 +13,7 @@ export default function InventoryPage() {
   const [imageFiles, setImageFiles] = useState([]);
   const [saving, setSaving]   = useState(false);
 
-  const fetchShoes = async () => {
+  const fetchShoes = useCallback(async () => {
     try {
       setLoading(true);
       const response = await client.get('/api/products/admin');
@@ -23,9 +23,15 @@ export default function InventoryPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  useEffect(() => { fetchShoes(); }, []);
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      fetchShoes();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [fetchShoes]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

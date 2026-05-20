@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getMyProfile, updateMyProfile, withdrawWallet } from '../../api/customers.js';
+import { getMyOrders } from '../../api/orders.js';
+import { getMySpecialOrders } from '../../api/specialOrders.js';
 import client from '../../api/client.js';
 import useToastStore from '../../store/toastStore.js';
 
@@ -12,6 +15,7 @@ const toDataUrl = (file) => new Promise((resolve, reject) => {
 
 export default function SettingsPage() {
   const toast = useToastStore((s) => s.show);
+  const navigate = useNavigate();
   const [customer, setCustomer] = useState(null);
   const [form, setForm] = useState({
     name: '',
@@ -23,6 +27,8 @@ export default function SettingsPage() {
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [specialOrders, setSpecialOrders] = useState([]);
 
   const applyProfile = (profile) => {
     setCustomer(profile);
@@ -39,21 +45,52 @@ export default function SettingsPage() {
     getMyProfile()
       .then((profile) => {
         applyProfile(profile);
+
+        if (!profile.profileComplete) {
+          navigate('/complete-profile', { replace: true });
+        }
       })
-      .catch(async () => {
+      .catch(async (profileError) => {
         try {
           await client.post('/api/auth/sync', {});
           const profile = await getMyProfile();
           applyProfile(profile);
+
+          if (!profile.profileComplete) {
+            navigate('/complete-profile', { replace: true });
+          }
         } catch {
-          toast('Failed to load profile', 'error');
+          toast(profileError.response?.data?.message || 'Failed to load profile', 'error');
         }
       });
-  }, [toast]);
+  }, [navigate, toast]);
+
+  useEffect(() => {
+    getMyOrders()
+      .then(setOrders)
+      .catch(() => {
+        setOrders([]);
+      });
+  }, []);
+
+  useEffect(() => {
+    getMySpecialOrders()
+      .then(setSpecialOrders)
+      .catch(() => {
+        setSpecialOrders([]);
+      });
+  }, []);
 
   const referralLink = customer
     ? `${window.location.origin}/signup?ref=${customer.referralCode}`
     : '';
+  const totalPaid = orders.reduce((sum, order) => sum + (order.paidAmount || 0), 0);
+  const openCreditOrders = orders.filter((order) => order.paymentType === 'credit');
+  const outstandingBalance = openCreditOrders.reduce((sum, order) => (
+    sum + Math.max(order.totalAmount - (order.walletDiscount || 0) - (order.manualDiscount || 0) - (order.paidAmount || 0), 0)
+  ), 0);
+  const referredCustomers = customer?.referredCustomers || [];
+  const qualifiedReferrals = referredCustomers.filter((referral) => referral.hasQualifiedPurchase);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(referralLink);
@@ -237,6 +274,87 @@ export default function SettingsPage() {
               Share on WhatsApp
             </button>
           </div>
+
+          <div className="surface-card rounded-[2rem] p-6 space-y-4">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-[0.18em] text-[var(--color-primary)]">Orders and payments</p>
+              <h2 className="mt-2 text-2xl font-extrabold">What your account shows</h2>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="rounded-[1.5rem] border border-[var(--color-border)] bg-white p-4">
+                <p className="text-sm text-[#666]">Orders placed</p>
+                <p className="mt-2 text-3xl font-extrabold">{orders.length}</p>
+              </div>
+              <div className="rounded-[1.5rem] border border-[var(--color-border)] bg-white p-4">
+                <p className="text-sm text-[#666]">Payments made</p>
+                <p className="mt-2 text-3xl font-extrabold text-[var(--color-primary)]">Ksh {totalPaid.toLocaleString()}</p>
+              </div>
+              <div className="rounded-[1.5rem] border border-[var(--color-border)] bg-white p-4">
+                <p className="text-sm text-[#666]">Outstanding credit</p>
+                <p className="mt-2 text-3xl font-extrabold text-[#c26b00]">Ksh {outstandingBalance.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="surface-card rounded-[2rem] p-6 space-y-4">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-[0.18em] text-[var(--color-primary)]">Referral activity</p>
+              <h2 className="mt-2 text-2xl font-extrabold">People who joined with your link</h2>
+              <p className="mt-2 text-sm text-[#666]">You earn Ksh 100 once a referred person places a qualifying purchase above Ksh 999.</p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-[1.5rem] border border-[var(--color-border)] bg-white p-4">
+                <p className="text-sm text-[#666]">Joined with your link</p>
+                <p className="mt-2 text-3xl font-extrabold">{referredCustomers.length}</p>
+              </div>
+              <div className="rounded-[1.5rem] border border-[var(--color-border)] bg-white p-4">
+                <p className="text-sm text-[#666]">Qualified bonuses earned</p>
+                <p className="mt-2 text-3xl font-extrabold text-[var(--color-primary)]">{qualifiedReferrals.length}</p>
+              </div>
+            </div>
+
+            {referredCustomers.length ? (
+              <div className="space-y-3">
+                {referredCustomers.map((referral) => (
+                  <div key={referral._id} className="rounded-[1.4rem] border border-[var(--color-border)] bg-white p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="font-extrabold">{referral.name}</p>
+                        <p className="text-sm text-[#666]">{referral.phone || referral.email || 'No contact added yet'}</p>
+                        <p className="text-xs text-[#7a7a7a]">Joined {new Date(referral.joinedAt).toLocaleString()}</p>
+                      </div>
+                      <span className={`rounded-full px-3 py-1 text-xs font-bold ${
+                        referral.hasQualifiedPurchase
+                          ? 'bg-[#eef7ee] text-[var(--color-primary)]'
+                          : 'bg-[#fff4e5] text-[#b86a00]'
+                      }`}>
+                        {referral.hasQualifiedPurchase ? 'Bonus earned' : 'Waiting for purchase'}
+                      </span>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                      <span className={`rounded-full px-3 py-1 font-semibold ${
+                        referral.profileComplete
+                          ? 'bg-[#f4f8ff] text-[#2754a6]'
+                          : 'bg-[#f8f1f1] text-[#a53a2f]'
+                      }`}>
+                        {referral.profileComplete ? 'Profile complete' : 'Profile incomplete'}
+                      </span>
+                      {referral.bonusAwardedAt && (
+                        <span className="rounded-full bg-[#eef7ee] px-3 py-1 font-semibold text-[var(--color-primary)]">
+                          Rewarded on {new Date(referral.bonusAwardedAt).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-[#666]">Nobody has signed up with your referral link yet.</p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -267,6 +385,134 @@ export default function SettingsPage() {
           </div>
         ) : (
           <p className="text-sm text-[#666]">No balance updates from staff yet.</p>
+        )}
+      </div>
+
+      <div className="surface-card mt-6 rounded-[2rem] p-6">
+        <div className="mb-4">
+          <p className="text-sm font-bold uppercase tracking-[0.18em] text-[var(--color-primary)]">My orders</p>
+          <h2 className="mt-2 text-2xl font-extrabold">Orders, installments, and remaining balances</h2>
+        </div>
+
+        {orders.length ? (
+          <div className="space-y-4">
+            {orders.map((order) => {
+              const remaining = Math.max(order.totalAmount - (order.walletDiscount || 0) - (order.manualDiscount || 0) - (order.paidAmount || 0), 0);
+
+              return (
+                <div key={order._id} className="rounded-[1.5rem] border border-[var(--color-border)] bg-white p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-lg font-extrabold">{order.items.length} item(s)</p>
+                      <p className="text-sm text-[#666]">
+                        {order.paymentType === 'credit' ? 'Lipa polepole' : 'Full payment'} · {order.status.replace('_', ' ')}
+                      </p>
+                      <p className="text-xs text-[#7a7a7a]">{new Date(order.createdAt).toLocaleString()}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-[#666]">Order total</p>
+                      <p className="text-2xl font-extrabold">Ksh {order.totalAmount.toLocaleString()}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-2xl bg-[#f7f6f2] p-4">
+                      <p className="text-sm text-[#666]">Paid so far</p>
+                      <p className="mt-1 text-xl font-extrabold text-[var(--color-primary)]">Ksh {order.paidAmount.toLocaleString()}</p>
+                    </div>
+                    <div className="rounded-2xl bg-[#f7f6f2] p-4">
+                      <p className="text-sm text-[#666]">Discounts used</p>
+                      <p className="mt-1 text-xl font-extrabold">Ksh {((order.walletDiscount || 0) + (order.manualDiscount || 0)).toLocaleString()}</p>
+                    </div>
+                    <div className="rounded-2xl bg-[#f7f6f2] p-4">
+                      <p className="text-sm text-[#666]">Still remaining</p>
+                      <p className="mt-1 text-xl font-extrabold text-[#c26b00]">Ksh {remaining.toLocaleString()}</p>
+                    </div>
+                  </div>
+
+                  {order.installments?.length > 0 ? (
+                    <div className="mt-4 space-y-2">
+                      {order.installments.slice().reverse().map((installment, index) => (
+                        <div key={`${order._id}-${index}`} className="rounded-2xl border border-[var(--color-border)] px-4 py-3">
+                          <p className="font-bold text-[var(--color-primary)]">Ksh {installment.amount.toLocaleString()}</p>
+                          <p className="text-sm text-[#666]">
+                            {(installment.paymentMethod || 'cash').toUpperCase()} {installment.reference ? `· ${installment.reference}` : ''} · {new Date(installment.paidAt).toLocaleString()}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-4 text-sm text-[#666]">No installment records yet for this order.</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-[#666]">You have not placed any orders yet.</p>
+        )}
+      </div>
+
+      <div className="surface-card mt-6 rounded-[2rem] p-6">
+        <div className="mb-4">
+          <p className="text-sm font-bold uppercase tracking-[0.18em] text-[var(--color-primary)]">Special orders</p>
+          <h2 className="mt-2 text-2xl font-extrabold">Track requested shoes and required deposit</h2>
+        </div>
+
+        {specialOrders.length ? (
+          <div className="space-y-4">
+            {specialOrders.map((order) => (
+              <div key={order._id} className="rounded-[1.5rem] border border-[var(--color-border)] bg-white p-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-lg font-extrabold">{order.productName || order.product?.name || 'Requested shoe'}</p>
+                    <p className="text-sm text-[#666]">
+                      Size {order.requestedSize || 'Not specified'}{order.requestedColor ? ` · ${order.requestedColor}` : ''}
+                    </p>
+                    <p className="text-xs text-[#7a7a7a]">{new Date(order.createdAt).toLocaleString()}</p>
+                  </div>
+                  <span className={`rounded-full px-3 py-1 text-xs font-bold ${
+                    order.status === 'fulfilled' ? 'bg-[#eef7ee] text-[var(--color-primary)]' :
+                    order.status === 'rejected' ? 'bg-[#f8e8e5] text-[#a53a2f]' :
+                    order.status === 'ordered' ? 'bg-[#eef3ff] text-[#2754a6]' :
+                    'bg-[#fff4e5] text-[#b86a00]'
+                  }`}>
+                    {order.status.replace('_', ' ')}
+                  </span>
+                </div>
+
+                {order.description && <p className="mt-3 text-sm text-[#4f4f4f]">{order.description}</p>}
+
+                {order.quotedAmount > 0 ? (
+                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-2xl bg-[#f7f6f2] p-4">
+                      <p className="text-sm text-[#666]">Shoe amount</p>
+                      <p className="mt-1 text-xl font-extrabold">Ksh {order.quotedAmount.toLocaleString()}</p>
+                    </div>
+                    <div className="rounded-2xl bg-[#f7f6f2] p-4">
+                      <p className="text-sm text-[#666]">Required deposit</p>
+                      <p className="mt-1 text-xl font-extrabold text-[#a85d00]">Ksh {order.requiredDeposit.toLocaleString()}</p>
+                    </div>
+                    <div className="rounded-2xl bg-[#f7f6f2] p-4">
+                      <p className="text-sm text-[#666]">Deposit status</p>
+                      <p className="mt-1 text-xl font-extrabold">
+                        {order.depositPaid ? 'Paid' : 'Pending'}
+                      </p>
+                      {order.depositPaid && (
+                        <p className="mt-1 text-xs text-[#666]">
+                          via {order.depositPaymentMethod} on {new Date(order.depositPaidAt).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm text-[#666]">Our team is still reviewing your request and will set the shoe amount first.</p>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-[#666]">You have not submitted any special shoe requests yet.</p>
         )}
       </div>
     </div>

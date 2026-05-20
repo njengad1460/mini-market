@@ -81,7 +81,7 @@ export default function OrderList({ orders }) {
                 <span className="text-xs text-gray-400">{order.paymentType}</span>
                 {order.paymentType === 'credit' && (
                   <span className="text-xs text-orange-500">
-                    Ksh {order.totalAmount - order.paidAmount} due
+                    Ksh {Math.max(order.totalAmount - (order.walletDiscount || 0) - (order.manualDiscount || 0) - order.paidAmount, 0)} due
                   </span>
                 )}
               </div>

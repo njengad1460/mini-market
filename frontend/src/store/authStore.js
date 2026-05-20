@@ -35,7 +35,11 @@ const useAuthStore = create((set) => ({
         try {
           await syncWithBackend(token)
         } catch (error) {
-          console.error('Failed to sync authenticated user with backend:', error)
+          if (error?.response?.status === 409) {
+            console.warn('Authenticated user needs profile attention:', error.response?.data?.message || 'Conflict while syncing profile')
+          } else {
+            console.error('Failed to sync authenticated user with backend:', error)
+          }
         }
       }
     } catch {

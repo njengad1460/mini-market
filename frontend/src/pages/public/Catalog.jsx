@@ -199,6 +199,7 @@ export default function Catalog() {
             : featuredShoes.map((shoe) => {
               const availableSizes = shoe.sizes?.filter((size) => size.stock > 0) || [];
               const totalStock = availableSizes.reduce((sum, item) => sum + item.stock, 0);
+              const isOutOfStock = totalStock === 0;
 
               return (
                 <article key={shoe._id} className="surface-card overflow-hidden rounded-[1.75rem] transition hover:-translate-y-1 hover:shadow-[var(--shadow-card)]">
@@ -217,6 +218,11 @@ export default function Catalog() {
                       {totalStock <= 3 && totalStock > 0 && (
                         <span className="accent-badge rounded-full px-3 py-1 text-xs font-bold">
                           {t('catalog.lowStock')}
+                        </span>
+                      )}
+                      {isOutOfStock && (
+                        <span className="rounded-full bg-[#f8e8e5] px-3 py-1 text-xs font-bold text-[#a53a2f]">
+                          Out of stock
                         </span>
                       )}
                     </div>
@@ -248,12 +254,21 @@ export default function Catalog() {
                       >
                         {t('catalog.viewDetails')}
                       </Link>
-                      <button
-                        onClick={() => handleAdd(shoe)}
-                        className="cta-button flex-1 rounded-2xl px-4 py-3 text-sm font-extrabold transition"
-                      >
-                        {t('catalog.addToCart')}
-                      </button>
+                      {isOutOfStock ? (
+                        <Link
+                          to={`/request-shoe?productId=${shoe._id}&productName=${encodeURIComponent(shoe.name)}`}
+                          className="flex-1 rounded-2xl border border-[#c26b00] bg-[#fff4e5] px-4 py-3 text-center text-sm font-extrabold text-[#9a5500] transition hover:bg-[#ffe7bf]"
+                        >
+                          Request order
+                        </Link>
+                      ) : (
+                        <button
+                          onClick={() => handleAdd(shoe)}
+                          className="cta-button flex-1 rounded-2xl px-4 py-3 text-sm font-extrabold transition"
+                        >
+                          {t('catalog.addToCart')}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </article>

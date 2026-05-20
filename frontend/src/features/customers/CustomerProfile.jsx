@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getCustomer, updateCustomerBalance } from '../../api/customers.js';
-import { getOrders } from '../../api/orders.js';
+import { getOrders, payInstallment } from '../../api/orders.js';
 import { ListItemSkeleton } from '../../components/Skeleton.jsx';
 import { Link } from 'react-router-dom';
 import useToastStore from '../../store/toastStore.js';
@@ -19,6 +19,8 @@ export default function CustomerProfile({ customerId }) {
   const [loading, setLoading]   = useState(true);
   const [balanceForm, setBalanceForm] = useState({ type: 'credit', amount: '', note: '' });
   const [savingBalance, setSavingBalance] = useState(false);
+  const [paymentForms, setPaymentForms] = useState({});
+  const [payingOrderId, setPayingOrderId] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -41,6 +43,9 @@ export default function CustomerProfile({ customerId }) {
 
   const totalSpent  = orders.reduce((s, o) => s + o.paidAmount, 0);
   const creditOrders = orders.filter(o => o.paymentType === 'credit' && o.status !== 'delivered');
+  const openCreditTotal = creditOrders.reduce((sum, order) => (
+    sum + Math.max(order.totalAmount - (order.walletDiscount || 0) - (order.manualDiscount || 0) - order.paidAmount, 0)
+  ), 0);
 
   const handleBalanceUpdate = async (e) => {
     e.preventDefault();
@@ -57,6 +62,45 @@ export default function CustomerProfile({ customerId }) {
       toast(err.response?.data?.message || 'Failed to update balance', 'error');
     } finally {
       setSavingBalance(false);
+    }
+  };
+
+  const updatePaymentForm = (orderId, patch) => {
+    setPaymentForms((current) => ({
+      ...current,
+      [orderId]: {
+        amount: current[orderId]?.amount || '',
+        paymentMethod: current[orderId]?.paymentMethod || 'cash',
+        reference: current[orderId]?.reference || '',
+        ...patch,
+      },
+    }));
+  };
+
+  const handleInstallmentSubmit = async (e, orderId) => {
+    e.preventDefault();
+    const form = paymentForms[orderId] || { amount: '', paymentMethod: 'cash', reference: '' };
+    setPayingOrderId(orderId);
+
+    try {
+      const updatedOrder = await payInstallment(orderId, {
+        amount: Number(form.amount),
+        paymentMethod: form.paymentMethod || 'cash',
+        reference: form.reference,
+      });
+
+      setOrders((current) => current.map((order) => (
+        order._id === orderId ? updatedOrder : order
+      )));
+      setPaymentForms((current) => ({
+        ...current,
+        [orderId]: { amount: '', paymentMethod: 'cash', reference: '' },
+      }));
+      toast('Payment recorded on customer account');
+    } catch (err) {
+      toast(err.response?.data?.message || 'Failed to record payment', 'error');
+    } finally {
+      setPayingOrderId(null);
     }
   };
 
@@ -94,7 +138,7 @@ export default function CustomerProfile({ customerId }) {
       </div>
 
       {/* stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div className="surface-card rounded-[1.5rem] p-3 text-center">
           <p className="text-2xl font-bold">{orders.length}</p>
           <p className="text-xs text-gray-500">Orders</p>
@@ -108,6 +152,10 @@ export default function CustomerProfile({ customerId }) {
             {customer.shoeBalance.toLocaleString()}
           </p>
           <p className="text-xs text-gray-500">Shoe Balance (Ksh)</p>
+        </div>
+        <div className="surface-card rounded-[1.5rem] p-3 text-center">
+          <p className="text-2xl font-bold text-orange-500">{openCreditTotal.toLocaleString()}</p>
+          <p className="text-xs text-gray-500">Open Credit (Ksh)</p>
         </div>
       </div>
 
@@ -150,19 +198,82 @@ export default function CustomerProfile({ customerId }) {
 
       {/* pending credit orders */}
       {creditOrders.length > 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-          <p className="font-semibold text-yellow-800 mb-2">⏳ Pending Credit Orders</p>
-          {creditOrders.map(o => (
-            <div key={o._id} className="flex justify-between text-sm py-1">
-              <span>Ksh {o.totalAmount - o.paidAmount} remaining</span>
-              <Link
-                to={`/dashboard/orders/${o._id}`}
-                className="text-blue-600 underline"
-              >
-                View
-              </Link>
-            </div>
-          ))}
+        <div className="surface-card rounded-[2rem] p-5">
+          <div className="mb-4">
+            <p className="text-lg font-extrabold text-yellow-800">Pending credit orders</p>
+            <p className="text-sm text-[#666]">Staff and admin can record installments here and the customer will see them in their account.</p>
+          </div>
+
+          <div className="space-y-4">
+            {creditOrders.map((o) => {
+              const remaining = Math.max(o.totalAmount - (o.walletDiscount || 0) - (o.manualDiscount || 0) - o.paidAmount, 0);
+              const form = paymentForms[o._id] || { amount: '', paymentMethod: 'cash', reference: '' };
+
+              return (
+                <div key={o._id} className="rounded-[1.4rem] border border-yellow-200 bg-yellow-50 p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-bold">{o.items.length} item(s) · Ksh {o.totalAmount.toLocaleString()}</p>
+                      <p className="text-sm text-[#666]">
+                        Paid Ksh {o.paidAmount.toLocaleString()} · Remaining Ksh {remaining.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-[#7a7a7a]">{new Date(o.createdAt).toLocaleDateString()}</p>
+                    </div>
+                    <Link to={`/dashboard/orders/${o._id}`} className="text-sm font-semibold text-blue-600 underline">
+                      Open order
+                    </Link>
+                  </div>
+
+                  <form onSubmit={(e) => handleInstallmentSubmit(e, o._id)} className="mt-4 grid gap-3 lg:grid-cols-[1fr_0.9fr_1.2fr_auto]">
+                    <input
+                      type="number"
+                      min="1"
+                      max={remaining}
+                      placeholder="Installment amount"
+                      value={form.amount}
+                      onChange={(e) => updatePaymentForm(o._id, { amount: e.target.value })}
+                      className="rounded-2xl border border-[var(--color-border)] bg-white px-4 py-3 text-sm"
+                      required
+                    />
+                    <select
+                      value={form.paymentMethod}
+                      onChange={(e) => updatePaymentForm(o._id, { paymentMethod: e.target.value })}
+                      className="rounded-2xl border border-[var(--color-border)] bg-white px-4 py-3 text-sm"
+                    >
+                      <option value="cash">Cash</option>
+                      <option value="mpesa">M-Pesa</option>
+                    </select>
+                    <input
+                      placeholder={form.paymentMethod === 'mpesa' ? 'M-Pesa reference' : 'Cash reference (optional)'}
+                      value={form.reference}
+                      onChange={(e) => updatePaymentForm(o._id, { reference: e.target.value })}
+                      className="rounded-2xl border border-[var(--color-border)] bg-white px-4 py-3 text-sm"
+                    />
+                    <button
+                      type="submit"
+                      disabled={payingOrderId === o._id}
+                      className="cta-button rounded-2xl px-4 py-3 text-sm font-extrabold"
+                    >
+                      {payingOrderId === o._id ? 'Saving...' : 'Record payment'}
+                    </button>
+                  </form>
+
+                  {o.installments?.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      {o.installments.slice().reverse().map((installment, index) => (
+                        <div key={`${o._id}-${index}`} className="rounded-2xl bg-white px-4 py-3 text-sm">
+                          <p className="font-semibold text-green-700">Ksh {installment.amount.toLocaleString()}</p>
+                          <p className="text-[#666]">
+                            {(installment.paymentMethod || 'cash').toUpperCase()} {installment.reference ? `· ${installment.reference}` : ''} · {new Date(installment.paidAt).toLocaleString()}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

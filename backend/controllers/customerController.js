@@ -1,6 +1,8 @@
 import Customer from '../models/Customer.js';
 import User from '../models/User.js';
 import AuditLog from '../models/AuditLog.js';
+import { formatPhone } from '../utils/formatPhone.js';
+import { ensureCustomerProfile } from './authController.js';
 
 const generateUniqueReferralCode = async (candidate) => {
   const seed = (candidate || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
@@ -17,13 +19,18 @@ const generateUniqueReferralCode = async (candidate) => {
 // Staff registers a walk-in customer with pinned location
 export const registerWalkin = async (req, res) => {
   const { name, phone, address, coordinates } = req.body;
+  const normalizedPhone = formatPhone(phone);
 
   try {
+    if (!normalizedPhone) {
+      return res.status(400).json({ message: 'Phone number is required' });
+    }
+
     const staff = await User.findOne({ cognitoSub: req.user.cognitoSub });
 
     const customer = await Customer.create({
       name,
-      phone,
+      phone: normalizedPhone,
       registrationType: 'walkin',
       registeredBy:     staff._id,
       location:         { type: 'Point', coordinates, address },
@@ -70,12 +77,32 @@ export const getCustomer = async (req, res) => {
 
 export const getMyProfile = async (req, res) => {
   try {
+    await ensureCustomerProfile(req.user);
+
     const customer = await Customer.findOne({ cognitoSub: req.user.cognitoSub })
       .populate('balanceUpdates.updatedBy', 'name role')
       .populate('referredBy', 'name referralCode');
 
     if (!customer) return res.status(404).json({ message: 'Customer profile not found' });
-    res.json(customer);
+
+    const referredCustomers = await Customer.find({ referredBy: customer._id })
+      .select('name phone email createdAt referralBonusAwardedAt referralBonusSourceOrder profileComplete')
+      .sort('-createdAt');
+
+    res.json({
+      ...customer.toObject(),
+      referredCustomers: referredCustomers.map((referral) => ({
+        _id: referral._id,
+        name: referral.name,
+        phone: referral.phone,
+        email: referral.email,
+        joinedAt: referral.createdAt,
+        profileComplete: referral.profileComplete,
+        hasQualifiedPurchase: Boolean(referral.referralBonusAwardedAt),
+        bonusAwardedAt: referral.referralBonusAwardedAt || null,
+        qualifyingOrderId: referral.referralBonusSourceOrder || null,
+      })),
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -85,16 +112,20 @@ export const updateMyProfile = async (req, res) => {
   const { name, phone, address, profileImage, referralCode } = req.body;
 
   try {
-    const customer = await Customer.findOne({ cognitoSub: req.user.cognitoSub });
-    if (!customer) return res.status(404).json({ message: 'Customer profile not found' });
+    const customer = await ensureCustomerProfile({
+      ...req.user,
+      name: name || req.user.name,
+      phone: phone || req.user.phone,
+    });
 
     const before = customer.toObject();
 
     if (name?.trim()) customer.name = name.trim();
-    if (phone?.trim() && phone.trim() !== customer.phone) {
-      const phoneExists = await Customer.findOne({ phone: phone.trim(), _id: { $ne: customer._id } });
+    const normalizedPhone = formatPhone(phone);
+    if (normalizedPhone && normalizedPhone !== customer.phone) {
+      const phoneExists = await Customer.findOne({ phone: normalizedPhone, _id: { $ne: customer._id } });
       if (phoneExists) return res.status(409).json({ message: 'Phone number already in use' });
-      customer.phone = phone.trim();
+      customer.phone = normalizedPhone;
     }
 
     if (typeof address === 'string') {
@@ -145,7 +176,8 @@ export const updateMyProfile = async (req, res) => {
       });
     }
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    const status = err.message?.includes('already registered') || err.message?.includes('already in use') ? 409 : 500;
+    res.status(status).json({ message: err.message });
   }
 };
 
@@ -202,19 +234,24 @@ export const updateCustomerBalance = async (req, res) => {
 };
 
 // Called internally when a referred customer's order exceeds 999
-export const applyReferralBonus = async (referredCustomerId) => {
+export const applyReferralBonus = async (referredCustomerId, qualifyingOrderId) => {
   const referred = await Customer.findById(referredCustomerId);
   if (!referred?.referredBy) return;
+  if (referred.referralBonusAwardedAt) return;
 
   await Customer.findByIdAndUpdate(referred.referredBy, {
     $inc: { walletBalance: 100 },
   });
+
+  referred.referralBonusAwardedAt = new Date();
+  referred.referralBonusSourceOrder = qualifyingOrderId;
+  await referred.save();
 };
 
 // Withdraw from wallet — max 50% at a time
 export const withdrawWallet = async (req, res) => {
   try {
-    const customer   = await Customer.findOne({ cognitoSub: req.user.cognitoSub });
+    const customer   = await ensureCustomerProfile(req.user);
     const maxWithdraw = Math.floor(customer.walletBalance / 2);
 
     if (maxWithdraw < 1) return res.status(400).json({ message: 'Insufficient wallet balance' });

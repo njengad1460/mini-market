@@ -72,6 +72,7 @@ export default function Checkout() {
         guestPhone:     showGuestPhone ? guestPhone.trim() : '',
       });
 
+      await fetchCart();
       navigate('/order-success');
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to place order');

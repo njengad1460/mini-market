@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { getProduct } from '../../api/shoe.js';
 import useCartStore from '../../store/cartStore.js';
 import useI18n from '../../i18n/index.js';
@@ -31,6 +31,7 @@ export default function ProductDetail() {
     );
 
   const images = shoe.images?.length ? shoe.images : ['/placeholder.png'];
+  const hasStock = (shoe.sizes || []).some((item) => item.stock > 0);
 
   const handleAdd = async () => {
     await addItem(shoe._id, size);
@@ -80,6 +81,11 @@ export default function ProductDetail() {
             <p className="mt-5 text-3xl font-extrabold text-[var(--color-primary)]">
               Ksh {shoe.price.toLocaleString()}
             </p>
+            {!hasStock && (
+              <p className="mt-3 inline-flex rounded-full bg-[#f8e8e5] px-3 py-1 text-sm font-bold text-[#a53a2f]">
+                Out of stock. You can still request this shoe as a special order.
+              </p>
+            )}
 
             <div className="mt-6">
               <p className="mb-3 text-sm font-bold uppercase tracking-[0.18em] text-[var(--color-primary)]">
@@ -106,10 +112,10 @@ export default function ProductDetail() {
             <div className="mt-6 grid gap-3 sm:grid-cols-[1fr_auto]">
               <button
                 onClick={handleAdd}
-                disabled={!size}
+                disabled={!size || !hasStock}
                 className="cta-button rounded-2xl px-5 py-4 text-sm font-extrabold disabled:opacity-40"
               >
-                {t('catalog.addToCart')}
+                {hasStock ? t('catalog.addToCart') : 'Out of stock'}
               </button>
               <button
                 onClick={handleShare}
@@ -118,6 +124,14 @@ export default function ProductDetail() {
                 {t('product.share')}
               </button>
             </div>
+            {!hasStock && (
+              <Link
+                to={`/request-shoe?productId=${shoe._id}&productName=${encodeURIComponent(shoe.name)}${size ? `&size=${encodeURIComponent(size)}` : ''}`}
+                className="mt-3 inline-flex w-full items-center justify-center rounded-2xl border border-[#c26b00] bg-[#fff4e5] px-5 py-4 text-sm font-bold text-[#9a5500] transition hover:bg-[#ffe7bf]"
+              >
+                Request this shoe instead
+              </Link>
+            )}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
