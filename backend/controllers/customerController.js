@@ -138,8 +138,8 @@ export const updateMyProfile = async (req, res) => {
 
     if (typeof profileImage === 'string') {
       const trimmedImage = profileImage.trim();
-      if (trimmedImage && !trimmedImage.startsWith('data:image/')) {
-        return res.status(400).json({ message: 'Profile image must be a valid image upload' });
+      if (trimmedImage && !trimmedImage.startsWith('data:image/') && !trimmedImage.startsWith('http')) {
+        return res.status(400).json({ message: 'Profile image must be a valid image upload or URL' });
       }
       customer.profileImage = trimmedImage || undefined;
     }

@@ -13,9 +13,12 @@ const specialOrderSchema = new mongoose.Schema({
   depositPaid: { type: Boolean, default: false },
   depositPaidAt: { type: Date },
   depositPaymentMethod: { type: String, enum: ['cash', 'mpesa'] },
+  finalPaymentPaid: { type: Boolean, default: false },
+  finalPaymentPaidAt: { type: Date },
+  finalPaymentMethod: { type: String, enum: ['cash', 'mpesa'] },
   status: {
     type: String,
-    enum: ['pending', 'awaiting_deposit', 'ordered', 'fulfilled', 'rejected'],
+    enum: ['pending', 'awaiting_deposit', 'ordered', 'fulfilled', 'rejected', 'completed'],
     default: 'pending',
   },
   reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

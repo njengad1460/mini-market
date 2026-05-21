@@ -6,7 +6,8 @@ const COLUMNS = [
   { key: 'pending',   label: '📥 Pending',   color: 'border-yellow-300 bg-yellow-50' },
   { key: 'awaiting_deposit',  label: '💰 Awaiting Deposit',  color: 'border-orange-300 bg-orange-50' },
   { key: 'ordered',  label: '🛒 Ordered',  color: 'border-blue-300 bg-blue-50' },
-  { key: 'fulfilled', label: '✅ Fulfilled',  color: 'border-green-300 bg-green-50' },
+  { key: 'fulfilled', label: '🚚 Fulfilled',  color: 'border-purple-300 bg-purple-50' },
+  { key: 'completed', label: '✅ Completed',  color: 'border-green-300 bg-green-50' },
   { key: 'rejected',  label: '❌ Rejected',   color: 'border-red-300 bg-red-50' },
 ];
 
@@ -14,6 +15,7 @@ export default function KanbanBoard({ orders, onUpdate }) {
   const toast = useToastStore((s) => s.show);
   const [quoteDrafts, setQuoteDrafts] = useState({});
   const [depositMethods, setDepositMethods] = useState({});
+  const [finalPaymentMethods, setFinalPaymentMethods] = useState({});
 
   const handleMove = async (orderId, data) => {
     try {
@@ -26,11 +28,11 @@ export default function KanbanBoard({ orders, onUpdate }) {
   };
 
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+    <div className="flex gap-4 overflow-x-auto pb-4">
       {COLUMNS.map((col) => {
         const colOrders = orders.filter(o => o.status === col.key);
         return (
-          <div key={col.key} className={`border-2 rounded-xl p-3 ${col.color}`}>
+          <div key={col.key} className={`flex-shrink-0 w-80 border-2 rounded-xl p-3 ${col.color}`}>
             <p className="font-semibold text-sm mb-3">
               {col.label}
               <span className="ml-1 text-gray-500">({colOrders.length})</span>
@@ -61,7 +63,10 @@ export default function KanbanBoard({ orders, onUpdate }) {
                     <div className="mb-2 rounded-lg bg-[#f7f6f2] px-3 py-2 text-xs">
                       <p>Total: Ksh {order.quotedAmount.toLocaleString()}</p>
                       <p>Deposit needed: Ksh {order.requiredDeposit.toLocaleString()}</p>
-                      <p>{order.depositPaid ? `Deposit paid by ${order.depositPaymentMethod}` : 'Deposit not yet paid'}</p>
+                      <p>{order.depositPaid ? `Deposit paid (${order.depositPaymentMethod})` : 'Deposit not yet paid'}</p>
+                      {order.finalPaymentPaid && (
+                        <p>Final payment paid ({order.finalPaymentMethod})</p>
+                      )}
                     </div>
                   )}
                   <p className="text-xs text-gray-400 mb-2">
@@ -105,6 +110,28 @@ export default function KanbanBoard({ orders, onUpdate }) {
                         className="w-full rounded-lg bg-[#a85d00] px-3 py-2 text-xs font-semibold text-[#fffdf8]"
                       >
                         Record 50% Deposit
+                      </button>
+                    </div>
+                  )}
+
+                  {order.status === 'fulfilled' && !order.finalPaymentPaid && (
+                    <div className="mb-2 space-y-2">
+                      <select
+                        value={finalPaymentMethods[order._id] || 'cash'}
+                        onChange={(e) => setFinalPaymentMethods((current) => ({ ...current, [order._id]: e.target.value }))}
+                        className="w-full rounded-lg border px-3 py-2 text-xs"
+                      >
+                        <option value="cash">Cash final payment</option>
+                        <option value="mpesa">M-Pesa final payment</option>
+                      </select>
+                      <button
+                        onClick={() => handleMove(order._id, {
+                          finalPaymentPaid: true,
+                          finalPaymentMethod: finalPaymentMethods[order._id] || 'cash',
+                        })}
+                        className="w-full rounded-lg bg-[#265f2e] px-3 py-2 text-xs font-semibold text-[#fffdf8]"
+                      >
+                        Record Final Payment
                       </button>
                     </div>
                   )}

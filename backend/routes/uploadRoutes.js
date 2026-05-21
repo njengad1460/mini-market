@@ -15,8 +15,6 @@ const upload = multer({
 
 router.post(
   '/',
-  authenticate,
-  authorize('admin', 'staff', 'customer'),
   upload.single('file'),
   uploadImage
 );

@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import client from '../../api/client.js';
+import useAuthStore from '../../store/authStore.js';
 
 export default function RequestShoe() {
+  const { isAuthenticated, role } = useAuthStore();
   const [searchParams] = useSearchParams();
   const soldOutRequest = useMemo(() => ({
     productId: searchParams.get('productId') || '',
@@ -55,6 +57,28 @@ export default function RequestShoe() {
         <p className="text-gray-500 text-sm mt-1">Our staff will review and get back to you.</p>
       </div>
     );
+
+  if (!isAuthenticated || role !== 'customer') {
+    return (
+      <div className="p-8 text-center max-w-md mx-auto">
+        <h1 className="text-2xl font-bold mb-4">Request via WhatsApp</h1>
+        <p className="text-gray-500 mb-6">
+          You need an account to track special requests here. For quick requests, you can contact us directly on WhatsApp!
+        </p>
+        <button
+          onClick={() => {
+            const msg = isSoldOutRequest
+              ? `Hi, I would like to request the sold out shoe: ${soldOutRequest.productName}`
+              : 'Hi, I would like to make a special shoe request.';
+            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+          }}
+          className="w-full bg-[#25D366] text-white py-3 rounded-xl font-bold text-lg"
+        >
+          Message on WhatsApp
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 max-w-md mx-auto">

@@ -109,10 +109,15 @@ export default function SettingsPage() {
     }
 
     try {
-      const dataUrl = await toDataUrl(file);
-      setForm((current) => ({ ...current, profileImage: dataUrl }));
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', 'profiles');
+      toast('Uploading image...');
+      const { data } = await client.post('/api/upload', formData);
+      setForm((current) => ({ ...current, profileImage: data.url }));
+      toast('Image uploaded successfully');
     } catch {
-      toast('Could not read that image', 'error');
+      toast('Could not upload that image', 'error');
     }
   };
 

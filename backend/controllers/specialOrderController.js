@@ -79,7 +79,7 @@ export const getMySpecialOrders = async (req, res) => {
 };
 
 export const updateSpecialOrderStatus = async (req, res) => {
-  const { status, quotedAmount, depositPaid, depositPaymentMethod } = req.body;
+  const { status, quotedAmount, depositPaid, depositPaymentMethod, finalPaymentPaid, finalPaymentMethod } = req.body;
 
   try {
     const staff = await User.findOne({ cognitoSub: req.user.cognitoSub });
@@ -123,7 +123,29 @@ export const updateSpecialOrderStatus = async (req, res) => {
       });
     }
 
-    if (status) {
+    if (finalPaymentPaid === true) {
+      if (!order.depositPaid) {
+        return res.status(400).json({ message: 'Cannot record final payment before deposit is paid' });
+      }
+      if (!['cash', 'mpesa'].includes(finalPaymentMethod)) {
+        return res.status(400).json({ message: 'Final payment method must be cash or mpesa' });
+      }
+
+      order.finalPaymentPaid = true;
+      order.finalPaymentPaidAt = new Date();
+      order.finalPaymentMethod = finalPaymentMethod;
+      order.status = 'completed';
+
+      await Notification.create({
+        recipientCustomer: order.customer,
+        title: 'Final Payment Received',
+        message: `Your final payment of Ksh ${order.quotedAmount - order.requiredDeposit} has been recorded. Your special order is complete!`,
+        type: 'payment',
+        link: '/settings'
+      });
+    }
+
+    if (status && !finalPaymentPaid) {
       if (status === 'ordered' && !order.depositPaid) {
         return res.status(400).json({ message: 'Record the 50% deposit before marking this special order as ordered' });
       }
