@@ -8,10 +8,12 @@
   --color-surface: #fffdf8;
   --color-accent: #ffa726;
   --color-text: #212121;
+  --color-text-muted: #5b5b5b;
   --color-error: #d32f2f;
   --color-border: rgba(46, 125, 50, 0.16);
-  --shadow-soft: 0 10px 30px rgba(46, 125, 50, 0.08);
-  --shadow-card: 0 12px 34px rgba(33, 33, 33, 0.08);
+  --shadow-soft: 0 4px 20px rgba(46, 125, 50, 0.05);
+  --shadow-card: 0 10px 40px rgba(33, 33, 33, 0.06);
+  --shadow-hover: 0 20px 40px rgba(33, 33, 33, 0.12);
 }
 
 *, *::before, *::after {
@@ -24,7 +26,7 @@ html {
 
 body {
   margin: 0;
-  font-family: "Manrope", "Segoe UI", sans-serif;
+  font-family: "Manrope", sans-serif;
   background:
     radial-gradient(circle at top left, rgba(102, 187, 106, 0.16), transparent 28%),
     linear-gradient(180deg, #fdfbf7 0%, var(--color-background) 100%);
@@ -52,36 +54,60 @@ a {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-soft);
+  border-radius: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.surface-card:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-3px);
 }
 
 .cta-button {
   background: var(--color-primary);
   color: white;
   border: none;
-  box-shadow: 0 12px 22px rgba(46, 125, 50, 0.22);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  border-radius: 1rem;
 }
 
 .cta-button:hover {
   background: #256a29;
+  box-shadow: 0 12px 25px rgba(46, 125, 50, 0.2);
+  transform: translateY(-1px);
 }
 
 .soft-button {
-  background: rgba(102, 187, 106, 0.12);
+  background: #f1f5f9;
   color: var(--color-primary);
-  border: 1px solid rgba(102, 187, 106, 0.22);
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.soft-button:hover {
+  background: #e2e8f0;
 }
 
 .bg-black.text-white {
-  background: #255e2c !important;
-  color: #fffdf8 !important;
-  box-shadow: 0 10px 20px rgba(37, 94, 44, 0.18);
+  background: var(--color-primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
 .bg-black.text-white:hover {
-  background: #1f4f25 !important;
+  background: #256a29 !important;
 }
 
 .accent-badge {
-  background: rgba(255, 167, 38, 0.16);
-  color: #a85d00;
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #ffedd5;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
 }

@@ -64,7 +64,8 @@ export default function Cart() {
             <img
               src={item.shoe.images?.[0] || '/placeholder.png'}
               alt={item.shoe.name}
-              className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+              onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder.png'; }}
+              className="w-16 h-16 object-cover rounded-lg flex-shrink-0 bg-gray-100 border border-gray-200"
             />
             <div className="flex-1 min-w-0">
               <p className="font-semibold truncate">{item.shoe.name}</p>

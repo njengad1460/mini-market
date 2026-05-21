@@ -1,6 +1,7 @@
 import SpecialOrder from '../models/SpecialOrder.js';
 import Customer from '../models/Customer.js';
 import User from '../models/User.js';
+import Notification from '../models/Notification.js';
 import { notifyStaff } from '../services/whatsappService.js';
 
 export const createSpecialOrder = async (req, res) => {
@@ -33,6 +34,14 @@ export const createSpecialOrder = async (req, res) => {
       ? `${productName} size ${requestedSize}${requestedColor?.trim() ? `, color ${requestedColor.trim()}` : ''}`
       : description || 'No description';
     await notifyStaff(phones, `New shoe request from ${customer.name}: ${summary}`);
+
+    await Notification.create({
+      forStaff: true,
+      title: 'New Special Request',
+      message: `${customer.name} requested: ${summary}`,
+      type: 'request',
+      link: '/dashboard/special-orders'
+    });
 
     res.status(201).json(order);
   } catch (err) {
@@ -104,6 +113,14 @@ export const updateSpecialOrderStatus = async (req, res) => {
       if (order.status === 'awaiting_deposit' || order.status === 'pending') {
         order.status = 'ordered';
       }
+
+      await Notification.create({
+        recipientCustomer: order.customer,
+        title: 'Deposit Received',
+        message: `Your deposit of Ksh ${order.requiredDeposit} has been recorded. Your request is now Ordered.`,
+        type: 'payment',
+        link: '/settings'
+      });
     }
 
     if (status) {

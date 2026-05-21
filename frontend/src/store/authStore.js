@@ -1,16 +1,17 @@
 import { create } from 'zustand'
 import {
-  signIn, signOut, signUp, getCurrentUser,
-  fetchUserAttributes, fetchAuthSession,
+  signIn, signOut, signUp, getCurrentUser, fetchAuthSession,
 } from 'aws-amplify/auth'
 import axios from 'axios'
 
 const syncWithBackend = async (token) => {
+  const referralCode = sessionStorage.getItem('referralCode');
   const res = await axios.post(
     `${import.meta.env.VITE_API_URL}/api/auth/sync`,
-    {},
+    { referralCode },
     { headers: { Authorization: `Bearer ${token}` } }
   )
+  if (referralCode) sessionStorage.removeItem('referralCode');
   return res.data
 }
 
@@ -22,11 +23,20 @@ const useAuthStore = create((set) => ({
   init: async () => {
     try {
       const { userId }  = await getCurrentUser()
-      const attributes  = await fetchUserAttributes()
       const session     = await fetchAuthSession()
+      const payload     = session.tokens?.idToken?.payload || {}
+      
+      const attributes = {
+        email: payload.email,
+        name: payload.name,
+        phone_number: payload.phone_number
+      }
+
       const token       = session.tokens?.idToken?.toString()
-      const groups      = session.tokens?.idToken?.payload['cognito:groups'] || []
-      const role        = groups[0] || 'customer'
+      const groups      = payload['cognito:groups'] || []
+      let role = 'customer'
+      if (groups.some(g => g.toLowerCase() === 'admin')) role = 'admin'
+      else if (groups.some(g => g.toLowerCase() === 'staff')) role = 'staff'
 
       set({ user: { userId, ...attributes }, role, loading: false })
 
@@ -42,7 +52,7 @@ const useAuthStore = create((set) => ({
           }
         }
       }
-    } catch {
+    } catch (err) {
       set({ user: null, role: null, loading: false })
     }
   },
