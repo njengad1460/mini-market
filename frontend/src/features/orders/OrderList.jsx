@@ -43,7 +43,7 @@ export default function OrderList({ orders }) {
               status === s ? 'bg-black text-white border-black' : 'border-gray-200'
             }`}
           >
-            {s.replace('_', ' ')}
+            {s === 'delivered' ? 'delivered / sold' : s.replace('_', ' ')}
             {s !== 'all' && (
               <span className="ml-1 opacity-60">
                 ({orders.filter(o => o.status === s).length})
@@ -76,7 +76,7 @@ export default function OrderList({ orders }) {
               </div>
               <div className="flex flex-col items-end gap-1">
                 <span className={`text-xs px-2 py-0.5 rounded-full ${statusColors[order.status]}`}>
-                  {order.status.replace('_', ' ')}
+                  {order.status === 'delivered' && order.paymentType === 'full' ? 'sold' : order.status.replace('_', ' ')}
                 </span>
                 <span className="text-xs text-gray-400">{order.paymentType}</span>
                 {order.paymentType === 'credit' && (

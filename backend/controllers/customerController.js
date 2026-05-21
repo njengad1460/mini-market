@@ -3,6 +3,7 @@ import User from '../models/User.js';
 import AuditLog from '../models/AuditLog.js';
 import { formatPhone } from '../utils/formatPhone.js';
 import { ensureCustomerProfile } from './authController.js';
+import { uploadImageBuffer } from '../services/s3Service.js';
 
 const generateUniqueReferralCode = async (candidate) => {
   const seed = (candidate || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
@@ -246,6 +247,50 @@ export const applyReferralBonus = async (referredCustomerId, qualifyingOrderId) 
   referred.referralBonusAwardedAt = new Date();
   referred.referralBonusSourceOrder = qualifyingOrderId;
   await referred.save();
+};
+
+export const uploadProfileImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Image file is required' });
+    }
+
+    const customer = await ensureCustomerProfile(req.user);
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer profile not found' });
+    }
+
+    const uploaded = await uploadImageBuffer({
+      buffer: req.file.buffer,
+      mimeType: req.file.mimetype,
+      folder: 'profile',
+    });
+
+    const before = customer.toObject();
+    customer.profileImage = uploaded.url;
+    await customer.save();
+
+    const actor = await User.findOne({ cognitoSub: req.user.cognitoSub });
+    if (actor?._id) {
+      await AuditLog.create({
+        actor: actor._id,
+        action: 'UPLOAD_PROFILE_IMAGE',
+        targetModel: 'Customer',
+        targetId: customer._id,
+        diff: { before: { profileImage: before.profileImage }, after: { profileImage: customer.profileImage } },
+      });
+    }
+
+    res.status(201).json({
+      message: 'Profile image uploaded successfully',
+      profileImage: customer.profileImage,
+      customer,
+    });
+  } catch (err) {
+    const message = err.message || 'Profile image upload failed';
+    const statusCode = /required|unsupported|limit/i.test(message) ? 400 : 500;
+    res.status(statusCode).json({ message });
+  }
 };
 
 // Withdraw from wallet — max 50% at a time

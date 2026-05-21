@@ -60,6 +60,7 @@ export default function SettingsPage() {
             navigate('/complete-profile', { replace: true });
           }
         } catch {
+          setCustomer({ error: profileError.response?.data?.message || 'Failed to load profile' });
           toast(profileError.response?.data?.message || 'Failed to load profile', 'error');
         }
       });
@@ -152,6 +153,16 @@ export default function SettingsPage() {
 
   if (!customer) {
     return <div className="mx-auto max-w-5xl px-4 py-10 text-center">Loading profile...</div>;
+  }
+
+  if (customer.error) {
+    return (
+      <div className="mx-auto max-w-5xl px-4 py-20 text-center space-y-4">
+        <h2 className="text-2xl font-bold text-red-600">Could not load profile</h2>
+        <p className="text-gray-600">{customer.error}</p>
+        <button onClick={() => window.location.reload()} className="cta-button rounded-xl px-4 py-2 text-sm font-bold mt-4">Try Again</button>
+      </div>
+    );
   }
 
   return (
@@ -405,7 +416,7 @@ export default function SettingsPage() {
                     <div>
                       <p className="text-lg font-extrabold">{order.items.length} item(s)</p>
                       <p className="text-sm text-[#666]">
-                        {order.paymentType === 'credit' ? 'Lipa polepole' : 'Full payment'} · {order.status.replace('_', ' ')}
+                        {order.paymentType === 'credit' ? 'Lipa polepole' : 'Full payment'} · {(order.status === 'delivered' && order.paymentType === 'full') ? 'sold' : order.status.replace('_', ' ')}
                       </p>
                       <p className="text-xs text-[#7a7a7a]">{new Date(order.createdAt).toLocaleString()}</p>
                     </div>
@@ -418,7 +429,7 @@ export default function SettingsPage() {
                   <div className="mt-4 grid gap-3 sm:grid-cols-3">
                     <div className="rounded-2xl bg-[#f7f6f2] p-4">
                       <p className="text-sm text-[#666]">Paid so far</p>
-                      <p className="mt-1 text-xl font-extrabold text-[var(--color-primary)]">Ksh {order.paidAmount.toLocaleString()}</p>
+                      <p className="mt-1 text-xl font-extrabold text-[var(--color-primary)]">Ksh {(order.paidAmount || 0).toLocaleString()}</p>
                     </div>
                     <div className="rounded-2xl bg-[#f7f6f2] p-4">
                       <p className="text-sm text-[#666]">Discounts used</p>

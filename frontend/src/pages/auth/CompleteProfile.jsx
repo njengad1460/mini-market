@@ -62,6 +62,7 @@ export default function CompleteProfile() {
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             className="w-full border rounded-xl px-4 py-3"
+            required
           />
           <button
             type="button"

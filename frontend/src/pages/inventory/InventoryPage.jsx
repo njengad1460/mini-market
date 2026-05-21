@@ -9,7 +9,8 @@ export default function InventoryPage() {
   const [shoes, setShoes]     = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm]       = useState({ name: '', brand: '', price: '', costPrice: '', category: '', sizes: '', initialStock: '' });
+  const [form, setForm]       = useState({ name: '', brand: '', price: '', costPrice: '', category: '' });
+  const [sizeStockList, setSizeStockList] = useState([{ size: '', stock: '' }]);
   const [imageFiles, setImageFiles] = useState([]);
   const [saving, setSaving]   = useState(false);
 
@@ -37,10 +38,9 @@ export default function InventoryPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const initStock = Number(form.initialStock) || 0;
-      const parsedSizes = form.sizes 
-        ? form.sizes.split(',').map(s => ({ size: s.trim(), stock: initStock })).filter(s => s.size)
-        : [];
+      const parsedSizes = sizeStockList
+        .filter(s => s.size.trim() !== '')
+        .map(s => ({ size: s.size.trim(), stock: Number(s.stock) || 0 }));
       const imageUploads = await Promise.all(
         imageFiles.map(async (file) => {
           const formData = new FormData();
@@ -60,7 +60,8 @@ export default function InventoryPage() {
       toast('Product added ✓');
       fetchShoes();
       setShowForm(false);
-      setForm({ name: '', brand: '', price: '', costPrice: '', category: '', sizes: '', initialStock: '' });
+      setForm({ name: '', brand: '', price: '', costPrice: '', category: '' });
+      setSizeStockList([{ size: '', stock: '' }]);
       setImageFiles([]);
     } catch (err) {
       toast(err.response?.data?.message || 'Failed to add product', 'error');
@@ -116,21 +117,52 @@ export default function InventoryPage() {
               required
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              type="text"
-              placeholder="Sizes (e.g. 40, 41)"
-              value={form.sizes}
-              onChange={(e) => setForm({ ...form, sizes: e.target.value })}
-              className="border rounded-xl px-4 py-2 text-sm"
-            />
-            <input
-              type="number"
-              placeholder="Initial Stock per size"
-              value={form.initialStock}
-              onChange={(e) => setForm({ ...form, initialStock: e.target.value })}
-              className="border rounded-xl px-4 py-2 text-sm"
-            />
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Sizes & Stock</p>
+            {sizeStockList.map((item, index) => (
+              <div key={index} className="flex gap-2 items-center">
+                <input
+                  type="text"
+                  placeholder="Size (e.g. 40)"
+                  value={item.size}
+                  onChange={(e) => {
+                    const newList = [...sizeStockList];
+                    newList[index].size = e.target.value;
+                    setSizeStockList(newList);
+                  }}
+                  className="w-full border rounded-xl px-4 py-2 text-sm"
+                />
+                <input
+                  type="number"
+                  placeholder="Stock"
+                  value={item.stock}
+                  onChange={(e) => {
+                    const newList = [...sizeStockList];
+                    newList[index].stock = e.target.value;
+                    setSizeStockList(newList);
+                  }}
+                  className="w-full border rounded-xl px-4 py-2 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (sizeStockList.length > 1) {
+                      setSizeStockList(sizeStockList.filter((_, i) => i !== index));
+                    }
+                  }}
+                  className="text-red-500 px-2 font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => setSizeStockList([...sizeStockList, { size: '', stock: '' }])}
+              className="text-sm font-semibold text-[var(--color-primary)] hover:underline"
+            >
+              + Add another size
+            </button>
           </div>
           <div className="space-y-2">
             <label className="block text-sm font-medium">Product Images</label>

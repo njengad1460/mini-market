@@ -80,7 +80,13 @@ export const syncUser = async (req, res) => {
     if (role === 'admin' || role === 'staff') {
       let user = await User.findOne({ cognitoSub });
       if (!user) {
-        user = await User.create({ cognitoSub, email, name, phone, role });
+        user = await User.create({ 
+          cognitoSub, 
+          email, 
+          name: name || (role === 'admin' ? 'System Admin' : 'Staff Member'), 
+          phone: phone || '+254000000000', 
+          role 
+        });
       }
       return res.json({ role, user });
     }
@@ -97,8 +103,9 @@ export const syncUser = async (req, res) => {
 
     return res.json({ role: 'customer', customer });
   } catch (err) {
+    import('fs').then(fs => fs.appendFileSync('/home/davy/mini-market/backend/sync-error.log', new Date().toISOString() + ' ' + err.stack + '\n')).catch(() => {});
     const status = err.message?.includes('already registered') ? 409 : 500;
-    res.status(status).json({ message: err.message });
+    res.status(status).json({ message: err.message, stack: err.stack });
   }
 };
 

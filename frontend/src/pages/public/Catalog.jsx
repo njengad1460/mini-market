@@ -9,6 +9,7 @@ import ProductFilters from '../../features/products/ProductFilters.jsx';
 
 export default function Catalog() {
   const [shoes, setShoes]     = useState([]);
+  const [randomShoes, setRandomShoes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ search: '', category: '', size: '', maxPrice: '' });
   const [activeSlide, setActiveSlide] = useState(0);
@@ -19,7 +20,10 @@ export default function Catalog() {
   const toast    = useToastStore((s) => s.show);
 
   useEffect(() => {
-    getProducts().then(setShoes).finally(() => setLoading(false));
+    getProducts().then((res) => {
+      setShoes(res);
+      setRandomShoes([...res].sort(() => 0.5 - Math.random()).slice(0, 4));
+    }).finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -49,9 +53,15 @@ export default function Catalog() {
     if (filters.size     && !shoe.sizes?.some(s => s.size === filters.size && s.stock > 0)) return false;
     if (filters.maxPrice && shoe.price > Number(filters.maxPrice)) return false;
     return true;
+  }).sort((a, b) => {
+    const aStock = a.sizes?.reduce((sum, s) => sum + (s.stock > 0 ? s.stock : 0), 0) || 0;
+    const bStock = b.sizes?.reduce((sum, s) => sum + (s.stock > 0 ? s.stock : 0), 0) || 0;
+    const aOut = aStock === 0 ? 1 : 0;
+    const bOut = bStock === 0 ? 1 : 0;
+    return aOut - bOut;
   });
 
-  const spotlight = shoes.slice(0, 2).map((shoe, index) => ({
+  const spotlight = randomShoes.slice(0, 2).map((shoe, index) => ({
     id: shoe._id,
     title: shoe.name,
     subtitle: index === 0 ? t('catalog.heroFresh') : t('catalog.heroComfort'),
@@ -67,7 +77,7 @@ export default function Catalog() {
       title: t('catalog.heroLipaTitle'),
       subtitle: t('catalog.heroOffer'),
       text: t('catalog.heroLipaText'),
-      image: spotlight[0]?.image || '/placeholder.png',
+      image: randomShoes[2]?.images?.[0] || spotlight[0]?.image || '/placeholder.png',
       to: '/checkout',
     },
     {
@@ -75,12 +85,13 @@ export default function Catalog() {
       title: t('catalog.heroDeliveryTitle'),
       subtitle: t('catalog.heroFast'),
       text: t('catalog.heroDeliveryText'),
-      image: spotlight[1]?.image || spotlight[0]?.image || '/placeholder.png',
+      image: randomShoes[3]?.images?.[0] || spotlight[1]?.image || '/placeholder.png',
       to: '/request-shoe',
     },
   ];
 
-  const currentSlide = slides[activeSlide % slides.length];
+  // Provide defaults if randomShoes is empty during loading
+  const currentSlide = slides[activeSlide % slides.length] || { title: '', subtitle: '', text: '', image: '/placeholder.png', to: '#' };
   const topCategories = [...new Set(shoes.map((shoe) => shoe.category).filter(Boolean))].slice(0, 5);
   const featuredShoes = filtered.slice(0, 8);
   const budgetShoes = filtered.filter((shoe) => shoe.price <= 2500).slice(0, 4);
@@ -92,8 +103,8 @@ export default function Catalog() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-      <section className="mb-6 grid gap-4 lg:grid-cols-[1.45fr_0.55fr]">
-        <div className="surface-card relative overflow-hidden rounded-[2rem] p-6 sm:p-8">
+      <section className="mb-6">
+        <div className="relative overflow-hidden rounded-[2rem] p-4 sm:p-6 max-w-5xl mx-auto shadow-2xl">
           <div className="absolute inset-0 bg-gradient-to-br from-[rgba(46,125,50,0.94)] via-[rgba(46,125,50,0.88)] to-[rgba(102,187,106,0.85)]" />
           <div className="absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.2),transparent_55%)]" />
           <div className="relative grid items-center gap-6 lg:grid-cols-[1fr_0.9fr]">
@@ -101,75 +112,58 @@ export default function Catalog() {
               <span className="inline-flex rounded-full bg-white/18 px-4 py-2 text-xs font-extrabold uppercase tracking-[0.18em] text-white/95">
                 {currentSlide.subtitle}
               </span>
-              <h1 className="mt-4 text-3xl font-extrabold leading-tight sm:text-4xl">
+              <h1 className="mt-4 text-2xl font-extrabold leading-tight sm:text-4xl">
                 {currentSlide.title}
               </h1>
               <p className="mt-3 max-w-lg text-sm leading-6 text-white/88 sm:text-base">
                 {currentSlide.text}
               </p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Link to={currentSlide.to} className="rounded-full bg-white px-5 py-3 text-sm font-extrabold text-[var(--color-primary)] transition hover:bg-[#f7f4eb]">
-                  {t('catalog.shopCollection')}
+              <div className="mt-6 flex flex-wrap gap-2 sm:gap-3">
+                <Link to={currentSlide.to} className="rounded-full bg-white px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-extrabold text-[#2e7d32] transition hover:bg-[#f7f4eb] shadow-lg">
+                  {t('catalog.shopCollection') || 'Shop Collection'}
                 </Link>
-                <Link to="/request-shoe" className="rounded-full border border-white/35 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10">
-                  {t('catalog.requestPair')}
+                <Link to="/request-shoe" className="rounded-full border border-white/20 px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-white transition hover:bg-white/10">
+                  {t('catalog.requestPair') || 'Request a Pair'}
                 </Link>
               </div>
             </div>
 
-            <div className="relative mx-auto flex w-full max-w-md justify-center">
-              <div className="absolute -bottom-8 h-28 w-52 rounded-full bg-black/15 blur-3xl" />
+            <div className="relative mx-auto flex w-full max-w-sm justify-center mt-6 lg:mt-0">
+              <div className="absolute -bottom-4 h-20 w-40 rounded-full bg-black/15 blur-3xl" />
               <img
                 src={currentSlide.image}
                 alt={currentSlide.title}
-                className="relative h-[250px] w-full rounded-[1.75rem] object-cover shadow-[0_24px_60px_rgba(0,0,0,0.18)] sm:h-[320px]"
+                className="relative h-[180px] w-full rounded-[1.5rem] object-cover shadow-[0_16px_40px_rgba(0,0,0,0.18)] sm:h-[240px]"
               />
             </div>
           </div>
 
-          <div className="relative mt-6 flex flex-wrap items-center gap-3">
+          <div className="relative mt-5 flex flex-wrap items-center gap-3">
             {slides.map((slide, index) => (
               <button
                 key={slide.id}
                 onClick={() => setActiveSlide(index)}
-                className={`h-2.5 rounded-full transition ${index === activeSlide ? 'w-10 bg-white' : 'w-2.5 bg-white/45'}`}
+                className={`h-2.5 rounded-full transition ${index === activeSlide ? 'w-8 bg-white' : 'w-2.5 bg-white/45'}`}
                 aria-label={`${t('catalog.slide')} ${index + 1}`}
               />
             ))}
           </div>
         </div>
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-          {quickStats.map((stat) => (
-            <div key={stat} className="surface-card rounded-[1.75rem] p-5">
-              <span className="accent-badge inline-flex rounded-full px-3 py-1 text-xs font-bold">
-                {t('catalog.whyUs')}
-              </span>
-              <p className="mt-3 text-base font-extrabold">{stat}</p>
-            </div>
-          ))}
-        </div>
       </section>
 
-      <section className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <section className="mb-4">
         <div>
-          <p className="text-sm font-bold uppercase tracking-[0.18em] text-[var(--color-primary)]">{t('catalog.title')}</p>
-          <h2 className="mt-2 text-3xl font-extrabold tracking-tight">{t('catalog.marketTitle')}</h2>
+          <p className="text-xs font-extrabold uppercase tracking-widest text-[var(--color-text-muted)]">{t('catalog.title')}</p>
+          <h2 className="mt-1 text-2xl sm:text-3xl font-black tracking-tight text-[var(--color-text)]">{t('catalog.marketTitle')}</h2>
         </div>
-        <button
-          onClick={() => setLang(lang === 'en' ? 'sw' : 'en')}
-          className="soft-button rounded-full px-4 py-2 text-sm font-bold"
-        >
-          {lang === 'en' ? 'Kiswahili' : 'English'}
-        </button>
       </section>
 
-      <section className="mb-6 flex flex-wrap gap-2">
+      <section className="mb-6 flex overflow-x-auto pb-2 scrollbar-hide gap-2" style={{ WebkitOverflowScrolling: 'touch' }}>
         {topCategories.map((category) => (
           <button
             key={category}
             onClick={() => setFilters({ ...filters, category })}
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+            className={`flex-shrink-0 rounded-full px-4 py-1.5 text-xs sm:text-sm font-semibold transition ${
               filters.category === category
                 ? 'bg-[var(--color-primary)] text-white'
                 : 'bg-white text-[#4b4b4b] border border-[var(--color-border)]'
@@ -193,7 +187,7 @@ export default function Catalog() {
           </span>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
           {loading
             ? Array.from({ length: 8 }).map((_, i) => <ShoeCardSkeleton key={i} />)
             : featuredShoes.map((shoe) => {
@@ -203,11 +197,11 @@ export default function Catalog() {
 
               return (
                 <article key={shoe._id} className="surface-card overflow-hidden rounded-[1.75rem] transition hover:-translate-y-1 hover:shadow-[var(--shadow-card)]">
-                  <Link to={`/shoes/${shoe._id}`} className="relative block">
+                  <Link to={`/shoes/${shoe._id}`} className="relative block overflow-hidden rounded-t-[1.5rem]">
                     <img
                       src={shoe.images?.[0] || '/placeholder.png'}
                       alt={shoe.name}
-                      className="h-56 w-full object-cover"
+                      className="h-56 w-full object-cover transition duration-500 hover:scale-105"
                     />
                     <div className="absolute left-4 top-4 flex flex-wrap gap-2">
                       {shoe.category && (
@@ -309,6 +303,23 @@ export default function Catalog() {
           <p className="mt-2 text-sm text-[#666]">{t('catalog.emptyHint')}</p>
         </div>
       )}
+
+      {/* Quick stats moved to bottom */}
+      <section className="mt-16 mb-8">
+        <h3 className="text-2xl font-extrabold text-center mb-6 text-[#212121]">{t('catalog.whyUs')}</h3>
+        <div className="grid gap-6 sm:grid-cols-3">
+          {quickStats.map((stat) => (
+            <div key={stat} className="surface-card rounded-[1.5rem] p-6 text-center hover:shadow-[var(--shadow-hover)] transition hover:-translate-y-1">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff5e6] text-[var(--color-accent)] mb-5">
+                <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <p className="text-[15px] font-bold text-[var(--color-text)]">{stat}</p>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

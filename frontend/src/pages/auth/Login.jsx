@@ -245,21 +245,6 @@ export default function Login() {
             <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="" />
             {t('auth.google')}
           </button>
-          <button
-            onClick={async () => {
-              setError('');
-              try {
-                await getCurrentUser();
-                navigate('/', { replace: true });
-                return;
-              } catch {
-                await signInWithRedirect({ provider: 'Facebook' });
-              }
-            }}
-            className="w-full bg-blue-600 text-white py-3 rounded-xl font-medium"
-          >
-            {t('auth.facebook')}
-          </button>
         </div>
 
         <p className="text-center text-sm text-gray-500 mt-6">
