@@ -3,6 +3,8 @@ import Customer from '../models/Customer.js';
 import User from '../models/User.js';
 import AuditLog from '../models/AuditLog.js';
 import Cart from '../models/Cart.js';
+import Shoe from '../models/Shoe.js';
+import Notification from '../models/Notification.js';
 import { applyReferralBonus } from './customerController.js';
 import { ensureOrderItemsInStock, deductStockForOrder } from '../services/stockService.js';
 
@@ -32,7 +34,11 @@ export const placeOrder = async (req, res) => {
     await ensureOrderItemsInStock(items);
 
     let customer = null;
-    if (req.user?.cognitoSub) {
+    if (req.user?.role === 'admin' || req.user?.role === 'staff') {
+      if (req.body.customerId) {
+        customer = await Customer.findById(req.body.customerId);
+      }
+    } else if (req.user?.cognitoSub) {
       customer = await Customer.findOne({ cognitoSub: req.user.cognitoSub });
       if (req.user.role === 'customer' && !customer) {
         return res.status(409).json({ message: 'Customer profile not ready yet. Please try again.' });
@@ -41,20 +47,32 @@ export const placeOrder = async (req, res) => {
 
     const normalizedGuestPhone = guestPhone?.trim();
     if (!customer && !normalizedGuestPhone) {
-      return res.status(400).json({ message: 'Guest phone number is required' });
+      return res.status(400).json({ message: 'Guest phone number or explicit customerId is required' });
     }
 
-    const totalAmount = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    let totalAmount = 0;
+    const validatedItems = [];
+    for (const item of items) {
+      const shoe = await Shoe.findById(item.shoe);
+      if (!shoe) return res.status(400).json({ message: 'Invalid shoe ID' });
+      totalAmount += shoe.price * item.quantity;
+      validatedItems.push({
+        ...item,
+        price: shoe.price
+      });
+    }
 
     const order = await Order.create({
       customer:      customer?._id,
       guestPhone:    customer ? undefined : normalizedGuestPhone,
-      items,
+      items:         validatedItems,
       orderType:     orderType || 'direct',
       paymentType:   paymentType || 'full',
       totalAmount,
       walletDiscount: walletDiscount || 0,
     });
+
+    await deductStockForOrder(order);
 
     // deduct wallet discount from customer balance
     if (walletDiscount && customer?._id) {
@@ -74,6 +92,14 @@ export const placeOrder = async (req, res) => {
     if (cartFilter) {
       await Cart.deleteOne(cartFilter);
     }
+
+    await Notification.create({
+      forStaff: true,
+      title: 'New Order Placed',
+      message: `A new ${orderType.replace('_', ' ')} order (Ksh ${totalAmount}) has been placed.`,
+      type: 'order',
+      link: `/dashboard/orders/${order._id}`
+    });
 
     res.status(201).json(order);
   } catch (err) {
@@ -146,6 +172,18 @@ export const payInstallment = async (req, res) => {
       reference: reference?.trim() || '',
     });
     order.paidAmount += numericAmount;
+
+    let autoCompleted = false;
+    if (order.paidAmount >= getNetTotal(order)) {
+      order.status = 'delivered';
+      const staffId = (await User.findOne({ cognitoSub: req.user.cognitoSub }))?._id;
+      const deliveredShoes = order.deliveries.map(d => d.shoe);
+      if (!deliveredShoes.includes('left') && staffId) order.deliveries.push({ shoe: 'left', deliveredBy: staffId });
+      if (!deliveredShoes.includes('right') && staffId) order.deliveries.push({ shoe: 'right', deliveredBy: staffId });
+      await deductStockForOrder(order);
+      autoCompleted = true;
+    }
+
     await order.save();
 
     const actor = await User.findOne({ cognitoSub: req.user.cognitoSub });
@@ -157,8 +195,24 @@ export const payInstallment = async (req, res) => {
         targetId:    order._id,
         diff:        {
           before: { paidAmount: order.paidAmount - numericAmount },
-          after:  { paidAmount: order.paidAmount, amount: numericAmount, paymentMethod, reference: reference?.trim() || '' },
+          after:  { 
+            paidAmount: order.paidAmount, 
+            amount: numericAmount, 
+            paymentMethod, 
+            reference: reference?.trim() || '',
+            ...(autoCompleted && { status: 'delivered' })
+          },
         },
+      });
+    }
+
+    if (order.customer) {
+      await Notification.create({
+        recipientCustomer: order.customer,
+        title: 'Payment Recorded',
+        message: `A payment of Ksh ${numericAmount} has been recorded for your order.`,
+        type: 'payment',
+        link: '/settings'
       });
     }
 
@@ -203,6 +257,7 @@ export const completeOrder = async (req, res) => {
 
     order.status = 'delivered';
     await deductStockForOrder(order);
+    await order.save();
 
     await AuditLog.create({
       actor:       staff._id,
@@ -218,6 +273,16 @@ export const completeOrder = async (req, res) => {
         },
       },
     });
+
+    if (order.customer && remainingBalance > 0) {
+      await Notification.create({
+        recipientCustomer: order.customer,
+        title: 'Final Payment Recorded',
+        message: `A final payment of Ksh ${remainingBalance} was recorded. Your order is completed.`,
+        type: 'payment',
+        link: '/settings'
+      });
+    }
 
     const populatedOrder = await Order.findById(order._id)
       .populate('customer', 'name phone email shoeBalance walletBalance')
@@ -243,6 +308,10 @@ export const recordDelivery = async (req, res) => {
       return res.status(400).json({ message: 'Left/right delivery tracking is only available for direct credit orders' });
     }
 
+    if (order.deliveries.some(d => d.shoe === shoe)) {
+      return res.status(400).json({ message: `The ${shoe} shoe has already been delivered` });
+    }
+
     order.deliveries.push({ shoe, deliveredBy: staff._id, location });
 
     // update status
@@ -255,9 +324,8 @@ export const recordDelivery = async (req, res) => {
 
     if (order.status === 'delivered') {
       await deductStockForOrder(order);
-    } else {
-      await order.save();
     }
+    await order.save();
 
     await AuditLog.create({
       actor:       staff._id,

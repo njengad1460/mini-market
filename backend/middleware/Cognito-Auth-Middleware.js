@@ -15,12 +15,16 @@ const authenticate = async (req, res, next) => {
     const payload = await verifier.verify(token);
     const groups  = payload['cognito:groups'] || [];
 
+    let role = 'customer';
+    if (groups.some(g => g.toLowerCase() === 'admin')) role = 'admin';
+    else if (groups.some(g => g.toLowerCase() === 'staff')) role = 'staff';
+
     req.user = {
       cognitoSub: payload.sub,
       email:      payload.email,
       name:       payload.name,
       phone:      payload.phone_number,
-      role:       groups[0] || 'customer', // highest precedence group wins
+      role,
     };
 
     next();

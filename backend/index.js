@@ -17,6 +17,10 @@ import analyticsRoutes    from './routes/analyticsRoutes.js';
 import cashRoutes         from './routes/cashRoutes.js';
 import userRoutes         from './routes/userRoutes.js';
 import uploadRoutes       from './routes/uploadRoutes.js';
+import syncRoutes         from './routes/syncRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+
+import { startOfflineSyncJob } from './jobs/offlineSyncJob.js';
 
 const app = express();
 
@@ -35,9 +39,12 @@ app.use('/api/analytics',     analyticsRoutes);
 app.use('/api/cash',          cashRoutes);
 app.use('/api/users',         userRoutes);
 app.use('/api/upload',        uploadRoutes);
+app.use('/api/sync',          syncRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.use(errorHandler);
 
 connectDB().then(() => {
+  startOfflineSyncJob();
   app.listen(ENV.PORT, () => console.log(`Server running on port ${ENV.PORT}`));
 });

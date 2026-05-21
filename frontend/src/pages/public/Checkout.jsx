@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useCartStore from '../../store/cartStore.js';
 import useAuthStore from '../../store/authStore.js';
+import useToastStore from '../../store/toastStore.js';
 import { placeOrder } from '../../api/orders.js';
 import client from '../../api/client.js';
 
 export default function Checkout() {
   const { items, fetchCart, total } = useCartStore();
   const { user }                    = useAuthStore();
+  const toast                       = useToastStore((s) => s.show);
   const navigate                    = useNavigate();
   const [customer, setCustomer]     = useState(user ? undefined : null);
   const [paymentType, setPaymentType] = useState('full');
@@ -47,11 +49,11 @@ export default function Checkout() {
   const handleOrder = async () => {
     if (items.length === 0) return;
     if (showGuestPhone && !guestPhone.trim()) {
-      alert('Please enter a phone number');
+      toast('Please enter a phone number', 'error');
       return;
     }
     if (waitingOnCustomer) {
-      alert('We are still loading your profile. Please try again in a moment.');
+      toast('We are still loading your profile. Please try again in a moment.', 'error');
       return;
     }
 
@@ -75,7 +77,7 @@ export default function Checkout() {
       await fetchCart();
       navigate('/order-success');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to place order');
+      toast(err.response?.data?.message || 'Failed to place order', 'error');
     } finally {
       setLoading(false);
     }
@@ -83,8 +85,20 @@ export default function Checkout() {
 
   if (items.length === 0)
     return (
-      <div className="p-8 text-center">
-        <p className="text-gray-500">Your cart is empty</p>
+      <div className="p-8 text-center max-w-xl mx-auto space-y-6">
+        <h1 className="text-2xl font-bold mb-8">Checkout</h1>
+        <div className="flex flex-col items-center justify-center space-y-4 bg-gray-50 rounded-2xl py-12 px-4">
+          <svg className="w-16 h-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+          </svg>
+          <p className="text-gray-500 font-medium">Your cart is empty</p>
+          <button 
+            onClick={() => navigate('/')} 
+            className="mt-4 bg-black text-white px-6 py-2 rounded-xl text-sm font-semibold hover:bg-gray-800 transition-colors"
+          >
+            Continue Shopping
+          </button>
+        </div>
       </div>
     );
 

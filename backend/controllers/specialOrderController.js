@@ -1,6 +1,7 @@
 import SpecialOrder from '../models/SpecialOrder.js';
 import Customer from '../models/Customer.js';
 import User from '../models/User.js';
+import Notification from '../models/Notification.js';
 import { notifyStaff } from '../services/whatsappService.js';
 
 export const createSpecialOrder = async (req, res) => {
@@ -33,6 +34,14 @@ export const createSpecialOrder = async (req, res) => {
       ? `${productName} size ${requestedSize}${requestedColor?.trim() ? `, color ${requestedColor.trim()}` : ''}`
       : description || 'No description';
     await notifyStaff(phones, `New shoe request from ${customer.name}: ${summary}`);
+
+    await Notification.create({
+      forStaff: true,
+      title: 'New Special Request',
+      message: `${customer.name} requested: ${summary}`,
+      type: 'request',
+      link: '/dashboard/special-orders'
+    });
 
     res.status(201).json(order);
   } catch (err) {
@@ -70,7 +79,7 @@ export const getMySpecialOrders = async (req, res) => {
 };
 
 export const updateSpecialOrderStatus = async (req, res) => {
-  const { status, quotedAmount, depositPaid, depositPaymentMethod } = req.body;
+  const { status, quotedAmount, depositPaid, depositPaymentMethod, finalPaymentPaid, finalPaymentMethod } = req.body;
 
   try {
     const staff = await User.findOne({ cognitoSub: req.user.cognitoSub });
@@ -104,11 +113,50 @@ export const updateSpecialOrderStatus = async (req, res) => {
       if (order.status === 'awaiting_deposit' || order.status === 'pending') {
         order.status = 'ordered';
       }
+
+      await Notification.create({
+        recipientCustomer: order.customer,
+        title: 'Deposit Received',
+        message: `Your deposit of Ksh ${order.requiredDeposit} has been recorded. Your request is now Ordered.`,
+        type: 'payment',
+        link: '/settings'
+      });
+    }
+
+    if (finalPaymentPaid === true) {
+      if (!order.quotedAmount) {
+        return res.status(400).json({ message: 'Set the shoe amount before recording final payment' });
+      }
+      if (!order.depositPaid) {
+        return res.status(400).json({ message: 'Deposit must be paid before recording final payment' });
+      }
+      if (!['cash', 'mpesa'].includes(finalPaymentMethod)) {
+        return res.status(400).json({ message: 'Final payment method must be cash or mpesa' });
+      }
+
+      order.finalPaymentPaid = true;
+      order.finalPaymentAt = new Date();
+      order.finalPaymentMethod = finalPaymentMethod;
+      if (order.status === 'ordered' || order.status === 'awaiting_final_payment') {
+        order.status = 'fulfilled';
+      }
+
+      const finalAmount = order.quotedAmount - order.requiredDeposit;
+      await Notification.create({
+        recipientCustomer: order.customer,
+        title: 'Order Fulfilled',
+        message: `Your special order has been completed! Final payment of Ksh ${finalAmount.toLocaleString()} received.`,
+        type: 'payment',
+        link: '/settings'
+      });
     }
 
     if (status) {
       if (status === 'ordered' && !order.depositPaid) {
         return res.status(400).json({ message: 'Record the 50% deposit before marking this special order as ordered' });
+      }
+      if (status === 'awaiting_final_payment' && !order.depositPaid) {
+        return res.status(400).json({ message: 'Deposit must be paid before awaiting final payment' });
       }
       order.status = status;
     }

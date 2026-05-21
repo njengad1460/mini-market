@@ -17,6 +17,9 @@ const attachSignedImages = async (shoe) => {
 export const addProduct = async (req, res) => {
   try {
     const staff = await User.findOne({ cognitoSub: req.user.cognitoSub });
+    if (!staff) {
+      return res.status(401).json({ message: 'User not found in database. Please log out and log back in to sync your account.' });
+    }
     const status = req.user.role === 'admin' ? 'active' : 'pending';
 
     const shoe = await Shoe.create({ ...req.body, addedBy: staff._id, status });
@@ -39,6 +42,9 @@ export const addProduct = async (req, res) => {
 export const approveProduct = async (req, res) => {
   try {
     const admin = await User.findOne({ cognitoSub: req.user.cognitoSub });
+    if (!admin) {
+      return res.status(401).json({ message: 'User not found in database. Please log out and log back in to sync your account.' });
+    }
     const shoe  = await Shoe.findByIdAndUpdate(req.params.id, { status: 'active' }, { new: true });
 
     await AuditLog.create({
@@ -96,6 +102,9 @@ export const getProduct = async (req, res) => {
 export const updateProduct = async (req, res) => {
   try {
     const staff = await (await import('../models/User.js')).default.findOne({ cognitoSub: req.user.cognitoSub });
+    if (!staff) {
+      return res.status(401).json({ message: 'User not found in database. Please log out and log back in to sync your account.' });
+    }
     const before = await Shoe.findById(req.params.id);
     const shoe   = await Shoe.findByIdAndUpdate(req.params.id, req.body, { new: true });
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { confirmSignUp, getCurrentUser } from 'aws-amplify/auth';
+import { confirmSignUp, getCurrentUser, signInWithRedirect } from 'aws-amplify/auth';
 import useAuthStore from '../../store/authStore.js';
 
 export default function Signup() {
@@ -29,6 +29,7 @@ export default function Signup() {
     setLoading(true);
     setError('');
     try {
+      if (form.referralCode) sessionStorage.setItem('referralCode', form.referralCode);
       await register(form.email, form.password, form.name, form.phone, form.referralCode);
       setStep('verify');
     } catch (err) {
@@ -168,6 +169,30 @@ export default function Signup() {
             {loading ? 'Creating account...' : 'Sign Up'}
           </button>
         </form>
+
+        <div className="my-4 flex items-center gap-2">
+          <hr className="flex-1" /><span className="text-gray-400 text-sm">or</span><hr className="flex-1" />
+        </div>
+
+        <div className="space-y-3">
+          <button
+            onClick={async () => {
+              setError('');
+              try {
+                await getCurrentUser();
+                navigate('/', { replace: true });
+                return;
+              } catch {
+                if (form.referralCode) sessionStorage.setItem('referralCode', form.referralCode);
+                await signInWithRedirect({ provider: 'Google' });
+              }
+            }}
+            className="w-full border py-3 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
+          >
+            <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="" />
+            Sign up with Google
+          </button>
+        </div>
 
         <p className="text-center text-sm text-gray-500 mt-6">
           Already have an account?{' '}

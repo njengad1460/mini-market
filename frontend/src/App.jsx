@@ -1,9 +1,11 @@
-import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate, useSearchParams } from 'react-router-dom';
+import { Hub } from 'aws-amplify/utils';
 import useAuthStore from './store/authStore.js';
 import useCartStore from './store/cartStore.js';
 import useI18n from './i18n/index.js';
 import Toast from './components/Toast.jsx';
+import NotificationBell from './components/NotificationBell.jsx';
 
 import Catalog          from './pages/public/Catalog.jsx';
 import ProductDetail    from './pages/public/ProductDetail.jsx';
@@ -24,6 +26,41 @@ import SpecialOrdersPage from './pages/specialOrder/SpecialOrdersPage.jsx';
 import Analytics        from './pages/dashbord/Analytics.jsx';
 import CashFloatPage    from './pages/cash/CashFloatPage.jsx';
 import UserManagementPage from './pages/settings/UserManagementPage.jsx';
+
+function AuthCallback() {
+  const { user } = useAuthStore();
+  const [searchParams] = useSearchParams();
+  const [errorMsg, setErrorMsg] = useState(searchParams.get('error_description') || searchParams.get('error'));
+  
+  // Listen for Hub failures if the URL didn't already have an error
+  useEffect(() => {
+    const unsubscribe = Hub.listen('auth', ({ payload }) => {
+      if (payload.event === 'signInWithRedirect_failure') {
+        setErrorMsg(payload.data?.message || 'Authentication failed during OAuth flow.');
+      }
+    });
+    return unsubscribe;
+  }, []);
+
+  if (errorMsg) {
+    return (
+      <div className="text-center mt-20">
+        <h2 className="text-xl font-bold text-red-600 mb-2">Authentication Error</h2>
+        <p className="text-gray-700">{errorMsg}</p>
+        <Link to="/login" className="text-blue-500 hover:underline mt-4 inline-block">Return to Login</Link>
+      </div>
+    );
+  }
+
+  if (user) return <Navigate to="/" replace />;
+  
+  // If there's an OAuth code or state in the URL, wait for Amplify Hub to process it.
+  if (searchParams.has('code') || searchParams.has('state')) {
+    return <div className="text-center mt-20 font-semibold">Completing authentication...</div>;
+  }
+
+  return <Navigate to="/login" replace />;
+}
 
 // Protects routes that require staff or admin
 function StaffRoute({ children }) {
@@ -49,6 +86,35 @@ function AdminRoute({ children }) {
   return children;
 }
 
+function Footer() {
+  return (
+    <footer className="bg-[#212121] text-white py-8 mt-auto border-t border-[#333]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid gap-8 md:grid-cols-3">
+        <div>
+          <h4 className="text-lg font-extrabold mb-4 text-[var(--color-accent)]">Narok Shoes</h4>
+          <p className="text-sm text-gray-400">Premium footwear delivered fast. Your comfort, our priority.</p>
+        </div>
+        <div>
+          <h4 className="text-lg font-extrabold mb-4 text-[var(--color-accent)]">Contact Us</h4>
+          <p className="text-sm text-gray-400 mb-2">Phone: 0113456059</p>
+          <p className="text-sm text-gray-400">Email: njengadavid1460@gmail.com</p>
+        </div>
+        <div>
+          <h4 className="text-lg font-extrabold mb-4 text-[var(--color-accent)]">Quick Links</h4>
+          <div className="flex flex-col gap-2 text-sm text-gray-400">
+            <Link to="/" className="hover:text-white transition">Home</Link>
+            <Link to="/request-shoe" className="hover:text-white transition">Request a Shoe</Link>
+            <Link to="/cart" className="hover:text-white transition">Cart</Link>
+          </div>
+        </div>
+      </div>
+      <div className="mt-8 pt-6 border-t border-[#333] text-center text-xs text-gray-500">
+        &copy; {new Date().getFullYear()} Narok Shoes. All rights reserved.
+      </div>
+    </footer>
+  );
+}
+
 function Navbar() {
   const { user, role, loading, logout } = useAuthStore();
   const items                  = useCartStore((s) => s.items);
@@ -57,90 +123,110 @@ function Navbar() {
   const t                      = useI18n((s) => s.t);
   const navigate               = useNavigate();
 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const handleLogout = async () => { await logout(); navigate('/'); };
 
   return (
-    <header className="sticky top-0 z-20 border-b border-[var(--color-border)] backdrop-blur-md">
-      <div className="bg-[#ffa726] text-[#212121]">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-2 text-sm font-semibold sm:flex-row sm:items-center sm:justify-between">
-          <p>{t('nav.promo')}</p>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-extrabold">{t('nav.deliveryTag')}</span>
-            <Link to="/request-shoe" className="rounded-full bg-white px-4 py-1.5 text-xs font-bold transition hover:bg-[#fff5e6]">
+    <header className="sticky top-0 z-20 glass">
+      <div className="bg-[var(--color-accent)] text-[var(--color-text)]">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-1.5 text-[13px] font-semibold tracking-wide">
+          <div className="flex-1 overflow-hidden whitespace-nowrap">
+            <marquee scrollamount="5" className="w-full">
+              In case of any question, call this number for help: <strong>0113456059</strong> &nbsp;&nbsp;|&nbsp;&nbsp; {t('nav.promo')}
+            </marquee>
+          </div>
+          <div className="ml-6 hidden sm:flex items-center gap-3 shrink-0">
+            <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">{t('nav.deliveryTag')}</span>
+            <Link to="/request-shoe" className="rounded-full bg-[var(--color-accent)] text-white px-3 py-1 text-[11px] font-bold transition hover:bg-orange-600">
               {t('nav.shopNow')}
             </Link>
           </div>
         </div>
       </div>
 
-      <nav className="bg-[rgba(250,248,243,0.94)]">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center justify-between gap-3">
+      <nav>
+        <div className="mx-auto flex max-w-7xl flex-col px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--color-primary)] text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(46,125,50,0.22)]">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--color-primary)] text-sm font-extrabold text-white shadow-md">
                 NS
               </div>
               <div>
-                <p className="text-lg font-extrabold tracking-tight">Narok Shoes</p>
-                <p className="text-xs text-[#5b5b5b]">{t('nav.subtitle')}</p>
+                <p className="text-xl font-extrabold tracking-tight text-[var(--color-text)]">Narok Shoes</p>
+                <p className="text-xs text-[var(--color-text-muted)] font-medium">{t('nav.subtitle')}</p>
               </div>
             </Link>
 
-            <Link
-              to="/cart"
-              className="relative rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm font-semibold lg:hidden"
-            >
-              {t('nav.cart')}
-              {items.length > 0 && (
-                <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-[var(--color-primary)] px-1.5 py-0.5 text-center text-[11px] text-white">
-                  {items.length}
-                </span>
-              )}
-            </Link>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 text-sm text-[#3f3f3f]">
-            <Link to="/" className="rounded-full px-3 py-2 transition hover:bg-white">{t('nav.home')}</Link>
-            <Link to="/request-shoe" className="rounded-full px-3 py-2 transition hover:bg-white">{t('nav.requestShoe')}</Link>
-            {user && role === 'customer' && (
-              <Link to="/settings" className="rounded-full px-3 py-2 transition hover:bg-white">{t('nav.settings')}</Link>
-            )}
-            {(role === 'staff' || role === 'admin') && (
-              <Link to="/dashboard" className="rounded-full px-3 py-2 font-semibold text-[var(--color-primary)] transition hover:bg-white">
-                Dashboard
+            <div className="flex items-center gap-2 lg:hidden">
+              <Link
+                to="/cart"
+                className="relative rounded-full border border-[var(--color-border)] bg-white px-3.5 py-1.5 text-sm font-semibold shadow-sm"
+              >
+                {t('nav.cart')}
+                {items.length > 0 && (
+                  <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-[var(--color-accent)] px-1.5 py-0.5 text-center text-[11px] text-[#212121] font-bold shadow-sm">
+                    {items.length}
+                  </span>
+                )}
               </Link>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setLang(lang === 'en' ? 'sw' : 'en')}
-              className="soft-button rounded-full px-4 py-2 text-sm font-semibold"
-            >
-              {lang === 'en' ? 'Kiswahili' : 'English'}
-            </button>
-
-            <Link
-              to="/cart"
-              className="relative hidden rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm font-semibold transition hover:border-[var(--color-primary)] lg:inline-flex"
-            >
-              {t('nav.cart')}
-              {items.length > 0 && (
-                <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-[var(--color-primary)] px-1.5 py-0.5 text-center text-[11px] text-white">
-                  {items.length}
-                </span>
-              )}
-            </Link>
-
-            {loading ? null : user ? (
-              <button onClick={handleLogout} className="rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm font-semibold text-[#5b5b5b] transition hover:border-[var(--color-primary)]">
-                {t('nav.logout')}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2 text-gray-600 rounded-lg hover:bg-gray-100 transition focus:outline-none"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+                </svg>
               </button>
-            ) : (
-              <Link to="/login" className="cta-button rounded-full px-5 py-2.5 text-sm font-bold transition">
-                {t('nav.login')}
+            </div>
+          </div>
+
+          <div className={`${isMobileMenuOpen ? 'flex' : 'hidden'} lg:flex flex-col lg:flex-row gap-5 lg:gap-3 lg:items-center w-full lg:w-auto mt-5 lg:mt-0`}>
+            <div className="flex flex-col lg:flex-row lg:items-center gap-2 text-[15px] lg:text-sm text-[#3f3f3f] font-medium">
+              <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="rounded-xl px-3 py-2 transition hover:bg-gray-50">{t('nav.home')}</Link>
+              <Link to="/request-shoe" onClick={() => setIsMobileMenuOpen(false)} className="rounded-xl px-3 py-2 transition hover:bg-gray-50">{t('nav.requestShoe')}</Link>
+              {user && role === 'customer' && (
+                <Link to="/settings" onClick={() => setIsMobileMenuOpen(false)} className="rounded-xl px-3 py-2 transition hover:bg-gray-50">{t('nav.settings')}</Link>
+              )}
+              {(role === 'staff' || role === 'admin') && (
+                <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="rounded-xl px-3 py-2 font-bold text-[var(--color-primary)] transition hover:bg-gray-50">
+                  Dashboard
+                </Link>
+              )}
+            </div>
+
+            <div className="flex flex-col lg:flex-row lg:items-center gap-3 border-t lg:border-none border-gray-200 pt-4 lg:pt-0">
+              <button
+                onClick={() => { setLang(lang === 'en' ? 'sw' : 'en'); setIsMobileMenuOpen(false); }}
+                className="soft-button w-full lg:w-auto rounded-xl lg:rounded-full px-4 py-2.5 lg:py-2 text-sm font-bold text-center"
+              >
+                {lang === 'en' ? 'Kiswahili' : 'English'}
+              </button>
+
+              <NotificationBell />
+
+              <Link
+                to="/cart"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="relative hidden lg:inline-flex rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm font-semibold transition hover:border-[var(--color-primary)]"
+              >
+                {t('nav.cart')}
+                {items.length > 0 && (
+                  <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-[var(--color-accent)] px-1.5 py-0.5 text-center text-[11px] text-[#212121] font-bold shadow-sm">
+                    {items.length}
+                  </span>
+                )}
               </Link>
-            )}
+
+              {loading ? null : user ? (
+                <button onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }} className="w-full lg:w-auto rounded-xl lg:rounded-full border border-[var(--color-border)] bg-white px-4 py-2.5 lg:py-2 text-sm font-semibold text-[#5b5b5b] transition hover:border-[var(--color-primary)]">
+                  {t('nav.logout')}
+                </button>
+              ) : (
+                <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="cta-button w-full lg:w-auto text-center rounded-xl lg:rounded-full px-5 py-3 lg:py-2.5 text-sm font-bold transition">
+                  {t('nav.login')}
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </nav>
@@ -151,13 +237,24 @@ function Navbar() {
 export default function App() {
   const init = useAuthStore((s) => s.init);
 
-  useEffect(() => { init(); }, [init]);
+  useEffect(() => { 
+    init(); 
+    
+    const unsubscribe = Hub.listen('auth', ({ payload }) => {
+      if (payload.event === 'signInWithRedirect' || payload.event === 'signedIn') {
+        init();
+      }
+    });
+
+    return unsubscribe;
+  }, [init]);
 
   return (
     <BrowserRouter>
-      <Navbar />
-      <Toast />
-      <main className="pb-10">
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <Toast />
+        <main className="flex-1 pb-10">
         <Routes>
           {/* public */}
           <Route path="/"             element={<Catalog />} />
@@ -170,6 +267,7 @@ export default function App() {
           <Route path="/checkout"         element={<Checkout />} />
           <Route path="/order-success"    element={<OrderSuccess />} />
           <Route path="/settings"         element={<CustomerRoute><SettingsPage /></CustomerRoute>} />
+          <Route path="/auth/callback"    element={<AuthCallback />} />
 
           {/* staff + admin */}
           <Route path="/dashboard" element={<StaffRoute><Dashboard /></StaffRoute>} />
@@ -185,7 +283,9 @@ export default function App() {
           <Route path="/dashboard/analytics"    element={<AdminRoute><Analytics /></AdminRoute>} />
           <Route path="/dashboard/users"        element={<AdminRoute><UserManagementPage /></AdminRoute>} />
         </Routes>
-      </main>
+        </main>
+        <Footer />
+      </div>
     </BrowserRouter>
   );
 }
