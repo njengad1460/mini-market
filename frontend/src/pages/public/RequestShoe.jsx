@@ -5,6 +5,7 @@ import useAuthStore from '../../store/authStore.js';
 
 export default function RequestShoe() {
   const { isAuthenticated, role } = useAuthStore();
+  const businessPhone = (import.meta.env.VITE_BUSINESS_WHATSAPP_PHONE || '').replace(/\D/g, '');
   const [searchParams] = useSearchParams();
   const soldOutRequest = useMemo(() => ({
     productId: searchParams.get('productId') || '',
@@ -17,6 +18,19 @@ export default function RequestShoe() {
   const [color, setColor]             = useState(searchParams.get('color') || '');
   const [submitted, setSubmitted]     = useState(false);
   const [loading, setLoading]         = useState(false);
+
+  const openWhatsApp = () => {
+    if (!businessPhone) {
+      alert('WhatsApp contact is not configured yet.');
+      return;
+    }
+
+    const msg = isSoldOutRequest
+      ? `Hi, I would like to request the sold out shoe: ${soldOutRequest.productName}`
+      : 'Hi, I would like to make a special shoe request.';
+
+    window.open(`https://wa.me/${businessPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -66,12 +80,7 @@ export default function RequestShoe() {
           You need an account to track special requests here. For quick requests, you can contact us directly on WhatsApp!
         </p>
         <button
-          onClick={() => {
-            const msg = isSoldOutRequest
-              ? `Hi, I would like to request the sold out shoe: ${soldOutRequest.productName}`
-              : 'Hi, I would like to make a special shoe request.';
-            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
-          }}
+          onClick={openWhatsApp}
           className="w-full bg-[#25D366] text-white py-3 rounded-xl font-bold text-lg"
         >
           Message on WhatsApp
