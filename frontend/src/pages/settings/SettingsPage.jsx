@@ -6,13 +6,6 @@ import { getMySpecialOrders } from '../../api/specialOrders.js';
 import client from '../../api/client.js';
 import useToastStore from '../../store/toastStore.js';
 
-const toDataUrl = (file) => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = () => resolve(reader.result);
-  reader.onerror = reject;
-  reader.readAsDataURL(file);
-});
-
 export default function SettingsPage() {
   const toast = useToastStore((s) => s.show);
   const navigate = useNavigate();

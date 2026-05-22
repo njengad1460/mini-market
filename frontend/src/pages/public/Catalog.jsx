@@ -15,8 +15,6 @@ export default function Catalog() {
   const [activeSlide, setActiveSlide] = useState(0);
   const addItem  = useCartStore((s) => s.addItem);
   const t        = useI18n((s) => s.t);
-  const lang     = useI18n((s) => s.lang);
-  const setLang  = useI18n((s) => s.setLang);
   const toast    = useToastStore((s) => s.show);
 
   useEffect(() => {

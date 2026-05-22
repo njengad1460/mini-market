@@ -52,7 +52,7 @@ const useAuthStore = create((set) => ({
           }
         }
       }
-    } catch (err) {
+    } catch {
       set({ user: null, role: null, loading: false })
     }
   },
