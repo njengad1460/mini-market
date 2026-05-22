@@ -9,8 +9,8 @@ export const ENV = {
   MONGO_URI: process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/mini-market',
 
   // AWS Cognito
-  COGNITO_USER_POOL_ID: process.env.COGNITO_USER_POOL_ID,
-  COGNITO_CLIENT_ID: process.env.COGNITO_CLIENT_ID,
+  COGNITO_USER_POOL_ID: (process.env.COGNITO_USER_POOL_ID || process.env.VITE_COGNITO_USER_POOL_ID || '').trim(),
+  COGNITO_CLIENT_ID: (process.env.COGNITO_CLIENT_ID || process.env.VITE_COGNITO_CLIENT_ID || '').trim(),
   COGNITO_REGION: process.env.COGNITO_REGION || 'us-east-1',
 
   // AWS credentials for Cognito admin operations

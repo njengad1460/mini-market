@@ -1,3 +1,9 @@
+const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+const redirectSignIn = currentOrigin
+  ? `${currentOrigin}/auth/callback`
+  : import.meta.env.VITE_REDIRECT_SIGN_IN;
+const redirectSignOut = currentOrigin || import.meta.env.VITE_REDIRECT_SIGN_OUT;
+
 const awsConfig = {
   Auth: {
     Cognito: {
@@ -7,8 +13,8 @@ const awsConfig = {
         oauth: {
           domain: import.meta.env.VITE_COGNITO_DOMAIN,
           scopes: ['openid', 'email', 'profile', 'phone'],
-          redirectSignIn: [import.meta.env.VITE_REDIRECT_SIGN_IN],
-          redirectSignOut: [import.meta.env.VITE_REDIRECT_SIGN_OUT],
+          redirectSignIn: [redirectSignIn],
+          redirectSignOut: [redirectSignOut],
           responseType: 'code',
         },
         email: true,
