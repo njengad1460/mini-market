@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { fetchAuthSession } from 'aws-amplify/auth';
 
-const client = axios.create({ baseURL: import.meta.env.VITE_API_URL });
+const client = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
 
 // attach JWT token if logged in, and guest session id always
 client.interceptors.request.use(async (config) => {
