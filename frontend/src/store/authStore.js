@@ -4,10 +4,12 @@ import {
 } from 'aws-amplify/auth'
 import axios from 'axios'
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || ''
+
 const syncWithBackend = async (token) => {
   const referralCode = sessionStorage.getItem('referralCode');
   const res = await axios.post(
-    `${import.meta.env.VITE_API_URL}/api/auth/sync`,
+    `${API_BASE_URL}/api/auth/sync`,
     { referralCode },
     { headers: { Authorization: `Bearer ${token}` } }
   )
