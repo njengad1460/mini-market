@@ -8,11 +8,13 @@ import { ShoeCardSkeleton } from '../../components/Skeleton.jsx';
 import ProductFilters from '../../features/products/ProductFilters.jsx';
 
 export default function Catalog() {
+  const productsPerPage = 8;
   const [shoes, setShoes]     = useState([]);
   const [randomShoes, setRandomShoes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ search: '', category: '', size: '', maxPrice: '' });
   const [activeSlide, setActiveSlide] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const addItem  = useCartStore((s) => s.addItem);
   const t        = useI18n((s) => s.t);
   const toast    = useToastStore((s) => s.show);
@@ -33,6 +35,10 @@ export default function Catalog() {
 
     return () => window.clearInterval(interval);
   }, [shoes]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters.search, filters.category, filters.size, filters.maxPrice]);
 
   const handleAdd = async (shoe) => {
     const firstAvailable = shoe.sizes?.find(s => s.stock > 0)?.size;
@@ -91,7 +97,8 @@ export default function Catalog() {
   // Provide defaults if randomShoes is empty during loading
   const currentSlide = slides[activeSlide % slides.length] || { title: '', subtitle: '', text: '', image: '/placeholder.png', to: '#' };
   const topCategories = [...new Set(shoes.map((shoe) => shoe.category).filter(Boolean))].slice(0, 5);
-  const featuredShoes = filtered.slice(0, 8);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / productsPerPage));
+  const featuredShoes = filtered.slice((currentPage - 1) * productsPerPage, currentPage * productsPerPage);
   const budgetShoes = filtered.filter((shoe) => shoe.price <= 2500).slice(0, 4);
   const quickStats = [
     t('catalog.statDelivery'),
@@ -268,6 +275,44 @@ export default function Catalog() {
             })
           }
         </div>
+
+        {!loading && filtered.length > productsPerPage && (
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={currentPage === 1}
+              className="rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm font-bold text-[var(--color-text)] transition disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              Previous
+            </button>
+            {Array.from({ length: totalPages }, (_, index) => {
+              const page = index + 1;
+              return (
+                <button
+                  key={page}
+                  type="button"
+                  onClick={() => setCurrentPage(page)}
+                  className={`h-10 min-w-10 rounded-full px-3 text-sm font-extrabold transition ${
+                    page === currentPage
+                      ? 'bg-[var(--color-primary)] text-white shadow-[var(--shadow-soft)]'
+                      : 'border border-[var(--color-border)] bg-white text-[var(--color-text)]'
+                  }`}
+                >
+                  {page}
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              disabled={currentPage === totalPages}
+              className="rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm font-bold text-[var(--color-text)] transition disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </section>
 
       {!loading && budgetShoes.length > 0 && (
