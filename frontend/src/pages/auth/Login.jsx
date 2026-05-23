@@ -242,7 +242,7 @@ export default function Login() {
             }}
             className="w-full border py-3 rounded-xl font-medium flex items-center justify-center gap-2"
           >
-            <img src="frontend/public/favicon.svg" className="w-4 h-4" alt="" />
+            <img src="/favicon.svg" className="w-4 h-4" alt="" />
             {t('auth.google')}
           </button>
         </div>
