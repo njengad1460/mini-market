@@ -96,8 +96,8 @@ function Footer() {
         </div>
         <div>
           <h4 className="text-lg font-extrabold mb-4 text-[var(--color-accent)]">Contact Us</h4>
-          <p className="text-sm text-gray-400 mb-2">Phone: 0113456059</p>
-          <p className="text-sm text-gray-400">Email: njengadavid1460@gmail.com</p>
+          <p className="text-sm text-gray-400 mb-2">Phone: <a href="tel:0113456059" className="hover:text-white transition">0113456059</a></p>
+          <p className="text-sm text-gray-400">Email: <a href="mailto:anjengadavid1460@gmail.com" className="hover:text-white transition">anjengadavid1460@gmail.com</a></p>
         </div>
         <div>
           <h4 className="text-lg font-extrabold mb-4 text-[var(--color-accent)]">Quick Links</h4>

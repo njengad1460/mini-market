@@ -62,7 +62,7 @@ export default function OnboardingTour({ open, onClose }) {
                 type="button"
                 onClick={() => setActiveStep(index)}
                 className={`h-2.5 rounded-full transition ${
-                  index === activeStep ? 'w-10 bg-[var(--color-primary)]' : 'w-2.5 bg-[rgba(46,125,50,0.22)]'
+                  index === activeStep ? 'w-10 bg-(--color-primary)' : 'w-2.5 bg-[rgba(46,125,50,0.22)]'
                 }`}
                 aria-label={`${t('tour.step')} ${index + 1}`}
               />
