@@ -189,7 +189,7 @@ export default function Signup() {
             }}
             className="w-full border py-3 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
           >
-            <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="" />
+            <img src="frontend/public/favicon.svg " className="w-4 h-4" alt="" />
             Sign up with Google
           </button>
         </div>

@@ -148,9 +148,11 @@ function Navbar() {
         <div className="mx-auto flex max-w-7xl flex-col px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary)] text-sm font-extrabold text-white shadow-md sm:h-11 sm:w-11">
-                NS
-              </div>
+              <img 
+                src="/logo.png" 
+                alt="Narok Shoes Logo" 
+                className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl object-cover shadow-md"
+              />
               <div>
                 <p className="text-lg font-extrabold tracking-tight text-[var(--color-text)] sm:text-xl">Narok Shoes</p>
                 <p className="text-xs text-[var(--color-text-muted)] font-medium">{t('nav.subtitle')}</p>
