@@ -16,7 +16,12 @@ export default function Catalog() {
   const [filters, setFilters] = useState({ search: '', category: '', size: '', maxPrice: '' });
   const [activeSlide, setActiveSlide] = useState(0);
   const [visibleCount, setVisibleCount] = useState(productsPerPage);
-  const [showTour, setShowTour] = useState(false);
+  const [showTour, setShowTour] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return !localStorage.getItem(TOUR_STORAGE_KEY);
+    }
+    return false;
+  });
   const addItem  = useCartStore((s) => s.addItem);
   const t        = useI18n((s) => s.t);
   const toast    = useToastStore((s) => s.show);
@@ -97,12 +102,7 @@ export default function Catalog() {
     },
   ];
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!localStorage.getItem(TOUR_STORAGE_KEY)) {
-      setShowTour(true);
-    }
-  }, []);
+
 
   // Provide defaults if randomShoes is empty during loading
   const currentSlide = slides[activeSlide % slides.length] || { title: '', subtitle: '', text: '', image: '/placeholder.png', to: '#' };

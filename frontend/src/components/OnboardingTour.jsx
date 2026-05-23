@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import useI18n from '../i18n/index.js';
 
 const TOUR_STORAGE_KEY = 'narok-shoes-tour-seen';
@@ -24,13 +24,15 @@ const steps = [
 
 export default function OnboardingTour({ open, onClose }) {
   const [activeStep, setActiveStep] = useState(0);
+  const [prevOpen, setPrevOpen] = useState(open);
   const t = useI18n((s) => s.t);
 
-  useEffect(() => {
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (!open) {
       setActiveStep(0);
     }
-  }, [open]);
+  }
 
   if (!open) return null;
 
