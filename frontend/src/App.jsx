@@ -129,15 +129,15 @@ function Navbar() {
   return (
     <header className="sticky top-0 z-20 glass">
       <div className="bg-[var(--color-accent)] text-[var(--color-text)]">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-1.5 text-[13px] font-semibold tracking-wide">
-          <div className="flex-1 overflow-hidden whitespace-nowrap">
+        <div className="mx-auto flex h-8 max-w-7xl items-center justify-between gap-3 px-4 text-[11px] font-semibold tracking-wide sm:h-9 sm:text-[12px]">
+          <div className="min-w-0 flex-1 overflow-hidden whitespace-nowrap leading-none">
             <marquee scrollamount="5" className="w-full">
               In case of any question, call this number for help: <strong>0113456059</strong> &nbsp;&nbsp;|&nbsp;&nbsp; {t('nav.promo')}
             </marquee>
           </div>
-          <div className="ml-6 hidden sm:flex items-center gap-3 shrink-0">
-            <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">{t('nav.deliveryTag')}</span>
-            <Link to="/request-shoe" className="rounded-full bg-[var(--color-accent)] text-white px-3 py-1 text-[11px] font-bold transition hover:bg-orange-600">
+          <div className="hidden shrink-0 items-center gap-2 sm:flex">
+            <span className="rounded-full bg-white/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">{t('nav.deliveryTag')}</span>
+            <Link to="/request-shoe" className="rounded-full bg-[rgba(33,33,33,0.16)] px-3 py-1 text-[10px] font-bold text-white transition hover:bg-[rgba(33,33,33,0.28)]">
               {t('nav.shopNow')}
             </Link>
           </div>
@@ -145,14 +145,14 @@ function Navbar() {
       </div>
 
       <nav>
-        <div className="mx-auto flex max-w-7xl flex-col px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="mx-auto flex max-w-7xl flex-col px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--color-primary)] text-sm font-extrabold text-white shadow-md">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary)] text-sm font-extrabold text-white shadow-md sm:h-11 sm:w-11">
                 NS
               </div>
               <div>
-                <p className="text-xl font-extrabold tracking-tight text-[var(--color-text)]">Narok Shoes</p>
+                <p className="text-lg font-extrabold tracking-tight text-[var(--color-text)] sm:text-xl">Narok Shoes</p>
                 <p className="text-xs text-[var(--color-text-muted)] font-medium">{t('nav.subtitle')}</p>
               </div>
             </Link>
@@ -180,7 +180,7 @@ function Navbar() {
             </div>
           </div>
 
-          <div className={`${isMobileMenuOpen ? 'flex' : 'hidden'} lg:flex flex-col lg:flex-row gap-5 lg:gap-3 lg:items-center w-full lg:w-auto mt-5 lg:mt-0`}>
+          <div className={`${isMobileMenuOpen ? 'flex' : 'hidden'} lg:flex flex-col lg:flex-row gap-4 lg:gap-3 lg:items-center w-full lg:w-auto mt-4 lg:mt-0`}>
             <div className="flex flex-col lg:flex-row lg:items-center gap-2 text-[15px] lg:text-sm text-[#3f3f3f] font-medium">
               <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="rounded-xl px-3 py-2 transition hover:bg-gray-50">{t('nav.home')}</Link>
               <Link to="/request-shoe" onClick={() => setIsMobileMenuOpen(false)} className="rounded-xl px-3 py-2 transition hover:bg-gray-50">{t('nav.requestShoe')}</Link>
@@ -194,7 +194,7 @@ function Navbar() {
               )}
             </div>
 
-            <div className="flex flex-col lg:flex-row lg:items-center gap-3 border-t lg:border-none border-gray-200 pt-4 lg:pt-0">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-3 border-t lg:border-none border-gray-200 pt-3 lg:pt-0">
               <button
                 onClick={() => { setLang(lang === 'en' ? 'sw' : 'en'); setIsMobileMenuOpen(false); }}
                 className="soft-button w-full lg:w-auto rounded-xl lg:rounded-full px-4 py-2.5 lg:py-2 text-sm font-bold text-center"

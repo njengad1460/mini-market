@@ -5,6 +5,7 @@ import useCartStore from '../../store/cartStore.js';
 import useI18n from '../../i18n/index.js';
 import useToastStore from '../../store/toastStore.js';
 import { ShoeCardSkeleton } from '../../components/Skeleton.jsx';
+import OnboardingTour, { TOUR_STORAGE_KEY } from '../../components/OnboardingTour.jsx';
 import ProductFilters from '../../features/products/ProductFilters.jsx';
 
 export default function Catalog() {
@@ -14,7 +15,8 @@ export default function Catalog() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ search: '', category: '', size: '', maxPrice: '' });
   const [activeSlide, setActiveSlide] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [visibleCount, setVisibleCount] = useState(productsPerPage);
+  const [showTour, setShowTour] = useState(false);
   const addItem  = useCartStore((s) => s.addItem);
   const t        = useI18n((s) => s.t);
   const toast    = useToastStore((s) => s.show);
@@ -36,9 +38,10 @@ export default function Catalog() {
     return () => window.clearInterval(interval);
   }, [shoes]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filters.search, filters.category, filters.size, filters.maxPrice]);
+  const handleFiltersChange = (nextFilters) => {
+    setFilters(nextFilters);
+    setVisibleCount(productsPerPage);
+  };
 
   const handleAdd = async (shoe) => {
     const firstAvailable = shoe.sizes?.find(s => s.stock > 0)?.size;
@@ -94,11 +97,18 @@ export default function Catalog() {
     },
   ];
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!localStorage.getItem(TOUR_STORAGE_KEY)) {
+      setShowTour(true);
+    }
+  }, []);
+
   // Provide defaults if randomShoes is empty during loading
   const currentSlide = slides[activeSlide % slides.length] || { title: '', subtitle: '', text: '', image: '/placeholder.png', to: '#' };
   const topCategories = [...new Set(shoes.map((shoe) => shoe.category).filter(Boolean))].slice(0, 5);
-  const totalPages = Math.max(1, Math.ceil(filtered.length / productsPerPage));
-  const featuredShoes = filtered.slice((currentPage - 1) * productsPerPage, currentPage * productsPerPage);
+  const featuredShoes = filtered.slice(0, visibleCount);
+  const hasMoreShoes = filtered.length > visibleCount;
   const budgetShoes = filtered.filter((shoe) => shoe.price <= 2500).slice(0, 4);
   const quickStats = [
     t('catalog.statDelivery'),
@@ -127,6 +137,13 @@ export default function Catalog() {
                 <Link to={currentSlide.to} className="rounded-full bg-white px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-extrabold text-[#2e7d32] transition hover:bg-[#f7f4eb] shadow-lg">
                   {t('catalog.shopCollection') || 'Shop Collection'}
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => setShowTour(true)}
+                  className="rounded-full border border-white/20 px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-white transition hover:bg-white/10"
+                >
+                  {t('catalog.howItWorks')}
+                </button>
                 <Link to="/request-shoe" className="rounded-full border border-white/20 px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-white transition hover:bg-white/10">
                   {t('catalog.requestPair') || 'Request a Pair'}
                 </Link>
@@ -167,7 +184,7 @@ export default function Catalog() {
         {topCategories.map((category) => (
           <button
             key={category}
-            onClick={() => setFilters({ ...filters, category })}
+            onClick={() => handleFiltersChange({ ...filters, category })}
             className={`flex-shrink-0 rounded-full px-4 py-1.5 text-xs sm:text-sm font-semibold transition ${
               filters.category === category
                 ? 'bg-[var(--color-primary)] text-white'
@@ -179,7 +196,7 @@ export default function Catalog() {
         ))}
       </section>
 
-      <ProductFilters filters={filters} onChange={setFilters} shoes={shoes} />
+      <ProductFilters filters={filters} onChange={handleFiltersChange} shoes={shoes} />
 
       <section className="mt-8">
         <div className="mb-4 flex items-center justify-between gap-3">
@@ -191,6 +208,12 @@ export default function Catalog() {
             {filtered.length} {t('catalog.results')}
           </span>
         </div>
+
+        {!loading && filtered.length > 0 && (
+          <p className="mb-4 text-sm font-medium text-[var(--color-text-muted)]">
+            {t('catalog.showingCount')} {Math.min(featuredShoes.length, filtered.length)} / {filtered.length}
+          </p>
+        )}
 
         <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
           {loading
@@ -276,40 +299,14 @@ export default function Catalog() {
           }
         </div>
 
-        {!loading && filtered.length > productsPerPage && (
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+        {!loading && hasMoreShoes && (
+          <div className="mt-8 flex justify-center">
             <button
               type="button"
-              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-              disabled={currentPage === 1}
-              className="rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm font-bold text-[var(--color-text)] transition disabled:cursor-not-allowed disabled:opacity-45"
+              onClick={() => setVisibleCount((count) => count + productsPerPage)}
+              className="cta-button rounded-full px-6 py-3 text-sm font-extrabold shadow-[var(--shadow-soft)]"
             >
-              Previous
-            </button>
-            {Array.from({ length: totalPages }, (_, index) => {
-              const page = index + 1;
-              return (
-                <button
-                  key={page}
-                  type="button"
-                  onClick={() => setCurrentPage(page)}
-                  className={`h-10 min-w-10 rounded-full px-3 text-sm font-extrabold transition ${
-                    page === currentPage
-                      ? 'bg-[var(--color-primary)] text-white shadow-[var(--shadow-soft)]'
-                      : 'border border-[var(--color-border)] bg-white text-[var(--color-text)]'
-                  }`}
-                >
-                  {page}
-                </button>
-              );
-            })}
-            <button
-              type="button"
-              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-              disabled={currentPage === totalPages}
-              className="rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm font-bold text-[var(--color-text)] transition disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              Next
+              {t('catalog.loadMore')}
             </button>
           </div>
         )}
@@ -363,6 +360,8 @@ export default function Catalog() {
           ))}
         </div>
       </section>
+
+      <OnboardingTour open={showTour} onClose={() => setShowTour(false)} />
     </div>
   );
 }

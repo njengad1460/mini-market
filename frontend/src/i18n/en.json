@@ -45,10 +45,33 @@
     "statSupport": "WhatsApp-friendly support for sizing, sourcing, and follow-up.",
     "featured": "Featured right now",
     "featuredHint": "Popular pairs, ready sizes, and the cleanest deals on the shop floor.",
+    "howItWorks": "How it works",
     "results": "results",
     "lowStock": "Almost sold out",
     "affordable": "Easy-on-budget picks",
-    "affordableHint": "Good-looking everyday shoes without stretching your budget."
+    "affordableHint": "Good-looking everyday shoes without stretching your budget.",
+    "loadMore": "Load more shoes",
+    "showingCount": "Showing"
+  },
+  "tour": {
+    "badge": "New here?",
+    "title": "Quick guide to shopping on Narok Shoes",
+    "subtitle": "Follow these short steps to browse, order, or request a pair. You can skip this anytime.",
+    "skip": "Skip tour",
+    "back": "Back",
+    "next": "Next",
+    "finish": "Start shopping",
+    "step": "Step",
+    "steps": {
+      "browseTitle": "Browse the latest pairs",
+      "browseBody": "Use categories and filters on the home page to quickly narrow shoes by name, size, type, or budget.",
+      "detailsTitle": "Open a shoe and choose your size",
+      "detailsBody": "Tap any pair to view photos, available sizes, price, and delivery information before adding it to cart.",
+      "cartTitle": "Add to cart and check out",
+      "cartBody": "Add an available size to your cart, then move to checkout to place your order or pay with Lipa Pole Pole.",
+      "requestTitle": "Request a pair if you cannot find it",
+      "requestBody": "Use Request Shoe whenever your preferred pair is out of stock or not listed and the team will help source it."
+    }
   },
   "product": {
     "selectSize": "Select Size",

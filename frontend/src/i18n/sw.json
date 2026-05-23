@@ -45,10 +45,33 @@
     "statSupport": "Usaidizi rafiki wa WhatsApp kwa saizi, kutafuta na kufuatilia.",
     "featured": "Vilivyochaguliwa sasa",
     "featuredHint": "Jozi maarufu, nambari zilizopo, na ofa safi zaidi dukani.",
+    "howItWorks": "Jinsi ya kutumia",
     "results": "matokeo",
     "lowStock": "Karibu kuisha",
     "affordable": "Chaguo nafuu",
-    "affordableHint": "Viatu vizuri vya kila siku bila kuongeza sana bajeti yako."
+    "affordableHint": "Viatu vizuri vya kila siku bila kuongeza sana bajeti yako.",
+    "loadMore": "Pakia viatu zaidi",
+    "showingCount": "Unaona"
+  },
+  "tour": {
+    "badge": "Mgeni hapa?",
+    "title": "Mwongozo mfupi wa kununua Narok Shoes",
+    "subtitle": "Fuata hatua hizi fupi kuona viatu, kuagiza, au kuomba jozi. Unaweza kuruka mwongozo huu wakati wowote.",
+    "skip": "Ruka mwongozo",
+    "back": "Rudi",
+    "next": "Ifuatayo",
+    "finish": "Anza kununua",
+    "step": "Hatua",
+    "steps": {
+      "browseTitle": "Angalia jozi mpya",
+      "browseBody": "Tumia aina na vichujio kwenye ukurasa wa nyumbani kupunguza viatu kwa jina, nambari, aina, au bajeti.",
+      "detailsTitle": "Fungua kiatu na uchague nambari",
+      "detailsBody": "Gusa jozi yoyote kuona picha, nambari zilizopo, bei, na maelezo ya uwasilishaji kabla ya kuweka kikapuni.",
+      "cartTitle": "Weka kikapuni na ukamilishe",
+      "cartBody": "Weka nambari inayopatikana kwenye kikapu, kisha nenda malipo kuagiza au kutumia Lipa Pole Pole.",
+      "requestTitle": "Omba jozi usipoipata",
+      "requestBody": "Tumia Omba Kiatu ikiwa jozi unayotaka haipo au haijaorodheshwa na timu itakusaidia kuitafuta."
+    }
   },
   "product": {
     "selectSize": "Chagua Nambari",
