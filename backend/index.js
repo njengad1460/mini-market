@@ -24,7 +24,7 @@ import { startOfflineSyncJob } from './jobs/offlineSyncJob.js';
 
 const app = express();
 
-app.use(cors({ origin: ['http://localhost:5173', 'http://localhost'], credentials: true }));
+app.use(cors({ origin: ['http://localhost:5173', 'http://localhost', 'http://mimi-market-350238019470-af-south-1-an.s3-website.af-south-1.amazonaws.com'], credentials: true }));
 app.use(express.json());
 app.use(requestLogger);
 app.use(generalLimiter);
