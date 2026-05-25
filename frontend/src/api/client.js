@@ -8,7 +8,7 @@ client.interceptors.request.use(async (config) => {
   // guest session id for cart
   let sessionId = localStorage.getItem('sessionId');
   if (!sessionId) {
-    sessionId = crypto.randomUUID();
+    sessionId = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substring(2);
     localStorage.setItem('sessionId', sessionId);
   }
   config.headers['x-session-id'] = sessionId;
