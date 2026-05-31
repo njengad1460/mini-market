@@ -16,6 +16,7 @@ export default function Catalog() {
   const [filters, setFilters] = useState({ search: '', category: '', size: '', maxPrice: '' });
   const [activeSlide, setActiveSlide] = useState(0);
   const [visibleCount, setVisibleCount] = useState(productsPerPage);
+  const [isHovered, setIsHovered] = useState(false);
   const [showTour, setShowTour] = useState(() => {
     if (typeof window !== 'undefined') {
       return !localStorage.getItem(TOUR_STORAGE_KEY);
@@ -34,14 +35,14 @@ export default function Catalog() {
   }, []);
 
   useEffect(() => {
-    if (shoes.length === 0) return undefined;
+    if (shoes.length === 0 || isHovered) return undefined;
 
     const interval = window.setInterval(() => {
       setActiveSlide((current) => (current + 1) % Math.min(Math.max(shoes.length, 3), 4));
     }, 4200);
 
     return () => window.clearInterval(interval);
-  }, [shoes]);
+  }, [shoes, isHovered]);
 
   const handleFiltersChange = (nextFilters) => {
     setFilters(nextFilters);
@@ -70,7 +71,8 @@ export default function Catalog() {
     const bStock = b.sizes?.reduce((sum, s) => sum + (s.stock > 0 ? s.stock : 0), 0) || 0;
     const aOut = aStock === 0 ? 1 : 0;
     const bOut = bStock === 0 ? 1 : 0;
-    return aOut - bOut;
+    if (aOut !== bOut) return aOut - bOut;
+    return (a.price || 0) - (b.price || 0);
   });
 
   const spotlight = randomShoes.slice(0, 2).map((shoe, index) => ({
@@ -118,49 +120,55 @@ export default function Catalog() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-      <section className="mb-6">
-        <div className="relative overflow-hidden rounded-[2rem] p-4 sm:p-6 max-w-5xl mx-auto shadow-2xl">
+      <section className="mb-4 sm:mb-6">
+        <div 
+          className="relative overflow-hidden rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-8 max-w-5xl mx-auto shadow-2xl"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          onTouchStart={() => setIsHovered(true)}
+          onTouchEnd={() => setIsHovered(false)}
+        >
           <div className="absolute inset-0 bg-gradient-to-br from-[rgba(46,125,50,0.94)] via-[rgba(46,125,50,0.88)] to-[rgba(102,187,106,0.85)]" />
           <div className="absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.2),transparent_55%)]" />
-          <div className="relative grid items-center gap-6 lg:grid-cols-[1fr_0.9fr]">
-            <div className="max-w-xl text-white">
-              <span className="inline-flex rounded-full bg-white/18 px-4 py-2 text-xs font-extrabold uppercase tracking-[0.18em] text-white/95">
+          <div className="relative flex flex-row items-center justify-between gap-3 sm:gap-8">
+            <div className="flex-1 min-w-0 max-w-xl text-white py-1">
+              <span className="inline-flex rounded-full bg-white/18 px-2 py-1 sm:px-4 sm:py-2 text-[8px] sm:text-xs font-extrabold uppercase tracking-[0.1em] text-white/95 max-w-full truncate">
                 {currentSlide.subtitle}
               </span>
-              <h1 className="mt-4 text-2xl font-extrabold leading-tight sm:text-4xl">
+              <h1 className="mt-2 sm:mt-4 text-lg sm:text-4xl font-extrabold leading-tight truncate">
                 {currentSlide.title}
               </h1>
-              <p className="mt-3 max-w-lg text-sm leading-6 text-white/88 sm:text-base">
+              <p className="mt-1 sm:mt-3 max-w-lg text-[11px] sm:text-base leading-4 sm:leading-6 text-white/88 line-clamp-2 sm:line-clamp-none">
                 {currentSlide.text}
               </p>
-              <div className="mt-6 flex flex-wrap gap-2 sm:gap-3">
-                <Link to={currentSlide.to} className="rounded-full bg-white px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-extrabold text-[#2e7d32] transition hover:bg-[#f7f4eb] shadow-lg">
+              <div className="mt-3 sm:mt-6 flex flex-wrap gap-1.5 sm:gap-3">
+                <Link to={currentSlide.to} className="rounded-full bg-[#111] border border-white/10 px-3 py-1.5 sm:px-6 sm:py-3 text-[10px] sm:text-sm font-extrabold text-white transition hover:bg-black shadow-[0_8px_16px_rgba(0,0,0,0.3)]">
                   {t('catalog.shopCollection') || 'Shop Collection'}
                 </Link>
                 <button
                   type="button"
                   onClick={() => setShowTour(true)}
-                  className="rounded-full border border-white/20 px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-white transition hover:bg-white/10"
+                  className="rounded-full bg-white/10 backdrop-blur-sm border border-white/20 px-3 py-1.5 sm:px-5 sm:py-3 text-[10px] sm:text-sm font-bold text-white transition hover:bg-white/20"
                 >
                   {t('catalog.howItWorks')}
                 </button>
-                <Link to="/request-shoe" className="rounded-full border border-white/20 px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-white transition hover:bg-white/10">
+                <Link to="/request-shoe" className="hidden sm:inline-flex rounded-full bg-white/10 backdrop-blur-sm border border-white/20 px-4 sm:px-5 py-2 sm:py-3 text-[11px] sm:text-sm font-bold text-white transition hover:bg-white/20">
                   {t('catalog.requestPair') || 'Request a Pair'}
                 </Link>
               </div>
             </div>
 
-            <div className="relative mx-auto flex w-full max-w-sm justify-center mt-6 lg:mt-0">
-              <div className="absolute -bottom-4 h-20 w-40 rounded-full bg-black/15 blur-3xl" />
+            <Link to={currentSlide.to} className="relative flex shrink-0 w-[110px] sm:w-full sm:max-w-sm justify-center transition hover:scale-[1.02] active:scale-[0.98]">
+              <div className="absolute -bottom-2 sm:-bottom-4 h-12 w-20 sm:h-20 sm:w-40 rounded-full bg-black/15 blur-xl sm:blur-3xl" />
               <img
                 src={currentSlide.image}
                 alt={currentSlide.title}
-                className="relative h-[180px] w-full rounded-[1.5rem] object-cover shadow-[0_16px_40px_rgba(0,0,0,0.18)] sm:h-[240px]"
+                className="relative h-[110px] w-full sm:h-[240px] rounded-[1rem] sm:rounded-[1.5rem] object-cover shadow-[0_8px_20px_rgba(0,0,0,0.18)]"
               />
-            </div>
+            </Link>
           </div>
 
-          <div className="relative mt-5 flex flex-wrap items-center gap-3">
+          <div className="relative mt-3 sm:mt-6 flex flex-wrap items-center gap-2 sm:gap-3">
             {slides.map((slide, index) => (
               <button
                 key={slide.id}
@@ -304,9 +312,12 @@ export default function Catalog() {
             <button
               type="button"
               onClick={() => setVisibleCount((count) => count + productsPerPage)}
-              className="cta-button rounded-full px-6 py-3 text-sm font-extrabold shadow-[var(--shadow-soft)]"
+              className="group flex w-full sm:w-auto items-center justify-center gap-2 rounded-full border-2 border-[var(--color-primary)] bg-transparent px-8 py-3.5 text-base font-extrabold text-[var(--color-primary)] transition duration-300 hover:bg-[var(--color-primary)] hover:text-white hover:shadow-lg"
             >
-              {t('catalog.loadMore')}
+              <span>{t('catalog.loadMore')}</span>
+              <svg className="w-5 h-5 transition-transform duration-300 group-hover:translate-y-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
           </div>
         )}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate, useSearchParams } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate, useSearchParams, useLocation } from 'react-router-dom';
 import { Hub } from 'aws-amplify/utils';
 import useAuthStore from './store/authStore.js';
 import useCartStore from './store/cartStore.js';
@@ -146,36 +146,50 @@ function Navbar() {
 
       <nav>
         <div className="mx-auto flex max-w-7xl flex-col px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-3">
+          <div className="flex items-center justify-between w-full">
+            <Link to="/" className="flex items-center gap-2 flex-shrink-0 min-w-0">
               <img 
                 src="/logo.png" 
                 alt="Narok Shoes Logo" 
-                className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl object-cover shadow-md"
+                className="h-9 w-9 sm:h-11 sm:w-11 rounded-xl object-cover shadow-md flex-shrink-0"
               />
-              <div>
-                <p className="text-lg font-extrabold tracking-tight text-[var(--color-text)] sm:text-xl">Narok Shoes</p>
-                <p className="text-xs text-[var(--color-text-muted)] font-medium">{t('nav.subtitle')}</p>
+              <div className="hidden min-[400px]:block min-w-0">
+                <p className="truncate text-base sm:text-lg font-extrabold tracking-tight text-[var(--color-text)] sm:text-xl">Narok Shoes</p>
+                <p className="hidden sm:block truncate text-xs text-[var(--color-text-muted)] font-medium">{t('nav.subtitle')}</p>
               </div>
             </Link>
 
-            <div className="flex items-center gap-2 lg:hidden">
+            <div className="flex items-center gap-1.5 sm:gap-2 lg:hidden flex-shrink-0">
+              <Link
+                to="/request-shoe"
+                className="rounded-full bg-[var(--color-accent)] px-2.5 py-1 text-[11px] sm:px-3 sm:py-1.5 sm:text-xs font-bold text-[#212121] shadow-sm whitespace-nowrap"
+              >
+                {t('nav.requestShoe')}
+              </Link>
+              {loading ? null : !user && (
+                <Link
+                  to="/login"
+                  className="rounded-full border border-[var(--color-border)] bg-white px-2.5 py-1 text-[11px] sm:px-3 sm:py-1.5 sm:text-xs font-semibold text-gray-700 shadow-sm whitespace-nowrap"
+                >
+                  {t('nav.login') || 'Login'}
+                </Link>
+              )}
               <Link
                 to="/cart"
-                className="relative rounded-full border border-[var(--color-border)] bg-white px-3.5 py-1.5 text-sm font-semibold shadow-sm"
+                className="relative rounded-full border border-[var(--color-border)] bg-white px-2.5 py-1 sm:px-3.5 sm:py-1.5 text-xs sm:text-sm font-semibold shadow-sm flex items-center"
               >
                 {t('nav.cart')}
                 {items.length > 0 && (
-                  <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-[var(--color-accent)] px-1.5 py-0.5 text-center text-[11px] text-[#212121] font-bold shadow-sm">
+                  <span className="absolute -right-1 -top-1 min-w-4 sm:min-w-5 rounded-full bg-[var(--color-accent)] px-1 sm:px-1.5 py-0.5 text-center text-[9px] sm:text-[11px] text-[#212121] font-bold shadow-sm">
                     {items.length}
                   </span>
                 )}
               </Link>
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2 text-gray-600 rounded-lg hover:bg-gray-100 transition focus:outline-none"
+                className="p-1 sm:p-2 text-gray-600 rounded-lg hover:bg-gray-100 transition focus:outline-none"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
                 </svg>
               </button>
@@ -224,9 +238,14 @@ function Navbar() {
                   {t('nav.logout')}
                 </button>
               ) : (
-                <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="cta-button w-full lg:w-auto text-center rounded-xl lg:rounded-full px-5 py-3 lg:py-2.5 text-sm font-bold transition">
-                  {t('nav.login')}
-                </Link>
+                <>
+                  <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="w-full lg:w-auto rounded-xl lg:rounded-full border border-[var(--color-border)] bg-white px-4 py-2.5 lg:py-2 text-sm font-semibold text-[#5b5b5b] transition hover:border-[var(--color-primary)] text-center">
+                    {t('nav.login')}
+                  </Link>
+                  <Link to="/signup" onClick={() => setIsMobileMenuOpen(false)} className="cta-button w-full lg:w-auto text-center rounded-xl lg:rounded-full px-5 py-3 lg:py-2.5 text-sm font-bold transition">
+                    {t('auth.signup') || 'Sign Up'}
+                  </Link>
+                </>
               )}
             </div>
           </div>
@@ -234,6 +253,16 @@ function Navbar() {
       </nav>
     </header>
   );
+}
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
 }
 
 export default function App() {
@@ -253,6 +282,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <div className="flex flex-col min-h-screen">
         <Navbar />
         <Toast />
