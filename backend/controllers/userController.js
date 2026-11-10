@@ -12,13 +12,17 @@ import User from '../models/User.js';
 import Customer from '../models/Customer.js';
 import AuditLog from '../models/AuditLog.js';
 
-const cognito = new CognitoIdentityProviderClient({
-  region: ENV.COGNITO_REGION,
-  credentials: {
+const hasCredentials = ENV.AWS_ACCESS_KEY_ID && ENV.AWS_SECRET_ACCESS_KEY;
+const cognitoConfig = { region: ENV.COGNITO_REGION };
+
+if (hasCredentials) {
+  cognitoConfig.credentials = {
     accessKeyId:     ENV.AWS_ACCESS_KEY_ID,
     secretAccessKey: ENV.AWS_SECRET_ACCESS_KEY,
-  },
-});
+  };
+}
+
+const cognito = new CognitoIdentityProviderClient(cognitoConfig);
 
 const POOL_ID = ENV.COGNITO_USER_POOL_ID;
 

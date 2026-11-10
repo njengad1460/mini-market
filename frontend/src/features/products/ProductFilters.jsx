@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import useI18n from '../../i18n/index.js';
 
-export default function ProductFilters({ filters, onChange, shoes }) {
+export default function ProductFilters({ filters, onChange, shoes = [] }) {
   const t = useI18n((s) => s.t);
   const [isOpen, setIsOpen] = useState(false);
 
-  const categories = ['', ...new Set(shoes.map(s => s.category).filter(Boolean))];
-  const sizes      = ['', ...new Set(shoes.flatMap(s => s.sizes.map(sz => sz.size)))].sort();
+  const safeShoes = Array.isArray(shoes) ? shoes : [];
+  const categories = ['', ...new Set(safeShoes.map(s => s.category).filter(Boolean))];
+  const sizes      = ['', ...new Set(safeShoes.flatMap(s => (s.sizes || []).map(sz => sz.size)))].sort();
   const hasActiveFilters = Boolean(filters.search || filters.category || filters.size || filters.maxPrice);
 
   return (

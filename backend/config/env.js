@@ -11,7 +11,7 @@ export const ENV = {
   // AWS Cognito
   COGNITO_USER_POOL_ID: (process.env.COGNITO_USER_POOL_ID || process.env.VITE_COGNITO_USER_POOL_ID || '').trim(),
   COGNITO_CLIENT_ID: (process.env.COGNITO_CLIENT_ID || process.env.VITE_COGNITO_CLIENT_ID || '').trim(),
-  COGNITO_REGION: process.env.COGNITO_REGION || 'us-east-1',
+  COGNITO_REGION: (process.env.COGNITO_REGION || (process.env.COGNITO_USER_POOL_ID || '').split('_')[0] || process.env.AWS_REGION || 'af-south-1').trim(),
 
   // AWS credentials for Cognito admin operations
   AWS_ACCESS_KEY_ID:     process.env.AWS_ACCESS_KEY_ID,

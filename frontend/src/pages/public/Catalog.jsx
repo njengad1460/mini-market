@@ -28,14 +28,22 @@ export default function Catalog() {
   const toast    = useToastStore((s) => s.show);
 
   useEffect(() => {
-    getProducts().then((res) => {
-      setShoes(res);
-      setRandomShoes([...res].sort(() => 0.5 - Math.random()).slice(0, 4));
-    }).finally(() => setLoading(false));
+    getProducts()
+      .then((res) => {
+        const productList = Array.isArray(res) ? res : [];
+        setShoes(productList);
+        setRandomShoes([...productList].sort(() => 0.5 - Math.random()).slice(0, 4));
+      })
+      .catch((err) => {
+        console.error('Failed to load products:', err);
+        setShoes([]);
+        setRandomShoes([]);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
-    if (shoes.length === 0 || isHovered) return undefined;
+    if (!Array.isArray(shoes) || shoes.length === 0 || isHovered) return undefined;
 
     const interval = window.setInterval(() => {
       setActiveSlide((current) => (current + 1) % Math.min(Math.max(shoes.length, 3), 4));
@@ -60,8 +68,10 @@ export default function Catalog() {
     }
   };
 
-  const filtered = shoes.filter((shoe) => {
-    if (filters.search   && !shoe.name.toLowerCase().includes(filters.search.toLowerCase())) return false;
+  const shoesList = Array.isArray(shoes) ? shoes : [];
+
+  const filtered = shoesList.filter((shoe) => {
+    if (filters.search   && !shoe.name?.toLowerCase().includes(filters.search.toLowerCase())) return false;
     if (filters.category && shoe.category !== filters.category) return false;
     if (filters.size     && !shoe.sizes?.some(s => s.size === filters.size && s.stock > 0)) return false;
     if (filters.maxPrice && shoe.price > Number(filters.maxPrice)) return false;
@@ -75,11 +85,11 @@ export default function Catalog() {
     return (a.price || 0) - (b.price || 0);
   });
 
-  const spotlight = randomShoes.slice(0, 2).map((shoe, index) => ({
+  const spotlight = (Array.isArray(randomShoes) ? randomShoes : []).slice(0, 2).map((shoe, index) => ({
     id: shoe._id,
     title: shoe.name,
     subtitle: index === 0 ? t('catalog.heroFresh') : t('catalog.heroComfort'),
-    text: `${shoe.brand || t('catalog.heroBrandless')} · Ksh ${shoe.price.toLocaleString()}`,
+    text: `${shoe.brand || t('catalog.heroBrandless')} · Ksh ${(shoe.price || 0).toLocaleString()}`,
     image: shoe.images?.[0] || '/placeholder.png',
     to: `/shoes/${shoe._id}`,
   }));
@@ -104,11 +114,9 @@ export default function Catalog() {
     },
   ];
 
-
-
   // Provide defaults if randomShoes is empty during loading
   const currentSlide = slides[activeSlide % slides.length] || { title: '', subtitle: '', text: '', image: '/placeholder.png', to: '#' };
-  const topCategories = [...new Set(shoes.map((shoe) => shoe.category).filter(Boolean))].slice(0, 5);
+  const topCategories = [...new Set(shoesList.map((shoe) => shoe.category).filter(Boolean))].slice(0, 5);
   const featuredShoes = filtered.slice(0, visibleCount);
   const hasMoreShoes = filtered.length > visibleCount;
   const budgetShoes = filtered.filter((shoe) => shoe.price <= 2500).slice(0, 4);
@@ -204,7 +212,7 @@ export default function Catalog() {
         ))}
       </section>
 
-      <ProductFilters filters={filters} onChange={handleFiltersChange} shoes={shoes} />
+      <ProductFilters filters={filters} onChange={handleFiltersChange} shoes={shoesList} />
 
       <section className="mt-8">
         <div className="mb-4 flex items-center justify-between gap-3">

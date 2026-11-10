@@ -85,6 +85,8 @@ jobs:
              VITE_COGNITO_USER_POOL_ID=${{ secrets.VITE_COGNITO_USER_POOL_ID }}
              VITE_COGNITO_CLIENT_ID=${{ secrets.VITE_COGNITO_CLIENT_ID }}
              VITE_COGNITO_DOMAIN=${{ secrets.VITE_COGNITO_DOMAIN }}
+             VITE_REDIRECT_SIGN_IN=${{ secrets.VITE_REDIRECT_SIGN_IN }}
+             VITE_REDIRECT_SIGN_OUT=${{ secrets.VITE_REDIRECT_SIGN_OUT }}
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/mini-market-frontend:latest, ${{ steps.login-ecr.outputs.registry }}/mini-market-frontend:${{ github.sha }}
           cache-from: type=gha

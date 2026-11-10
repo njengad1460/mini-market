@@ -6,6 +6,7 @@ import useCartStore from './store/cartStore.js';
 import useI18n from './i18n/index.js';
 import Toast from './components/Toast.jsx';
 import NotificationBell from './components/NotificationBell.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 
 import Catalog          from './pages/public/Catalog.jsx';
 import ProductDetail    from './pages/public/ProductDetail.jsx';
@@ -287,6 +288,7 @@ export default function App() {
         <Navbar />
         <Toast />
         <main className="flex-1 pb-10">
+        <ErrorBoundary>
         <Routes>
           {/* public */}
           <Route path="/"             element={<Catalog />} />
@@ -315,6 +317,7 @@ export default function App() {
           <Route path="/dashboard/analytics"    element={<AdminRoute><Analytics /></AdminRoute>} />
           <Route path="/dashboard/users"        element={<AdminRoute><UserManagementPage /></AdminRoute>} />
         </Routes>
+        </ErrorBoundary>
         </main>
         <Footer />
       </div>

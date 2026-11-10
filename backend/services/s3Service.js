@@ -8,11 +8,12 @@ const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
 const getPublicUrl = (key) => {
-  if (ENV.S3_PUBLIC_BASE_URL) {
-    return `${ENV.S3_PUBLIC_BASE_URL.replace(/\/$/, '')}/${key}`;
+  const cleanKey = (key || '').replace(/^\/+/, '');
+  if (ENV.S3_PUBLIC_BASE_URL && !ENV.S3_PUBLIC_BASE_URL.startsWith('arn:')) {
+    return `${ENV.S3_PUBLIC_BASE_URL.replace(/\/$/, '')}/${cleanKey}`;
   }
 
-  return `https://${ENV.S3_BUCKET_NAME}.s3.${ENV.S3_REGION}.amazonaws.com/${key}`;
+  return `https://${ENV.S3_BUCKET_NAME}.s3.${ENV.S3_REGION}.amazonaws.com/${cleanKey}`;
 };
 
 const getExtensionFromMimeType = (mimeType) => {
@@ -37,8 +38,27 @@ const ensureS3Config = () => {
 };
 
 const getKeyFromUrl = (url) => {
+  if (!url || typeof url !== 'string') return null;
+
+  // Handle ARN format: arn:aws:s3:::bucket-name/uploads/photo.jpg
+  if (url.startsWith('arn:aws:s3:::')) {
+    const withoutArn = url.replace('arn:aws:s3:::', '');
+    const firstSlash = withoutArn.indexOf('/');
+    return firstSlash !== -1 ? withoutArn.slice(firstSlash + 1) : null;
+  }
+
   try {
     const parsed = new URL(url);
+
+    // If it's an external URL (e.g. unsplash, cloudinary, imgur) and NOT an S3 bucket URL, do not extract as S3 key
+    const isS3 = parsed.hostname.includes('s3') ||
+                 (ENV.S3_BUCKET_NAME && parsed.hostname.includes(ENV.S3_BUCKET_NAME)) ||
+                 (ENV.S3_PUBLIC_BASE_URL && url.includes(ENV.S3_PUBLIC_BASE_URL));
+
+    if (!isS3) {
+      return null;
+    }
+
     return decodeURIComponent(parsed.pathname.replace(/^\/+/, ''));
   } catch {
     return null;
@@ -77,26 +97,55 @@ export const uploadImageBuffer = async ({ buffer, mimeType, folder = 'uploads' }
 };
 
 export const getSignedImageUrl = async (value, expiresIn = 3600) => {
-  ensureS3Config();
+  if (!value || typeof value !== 'string') return value;
 
-  if (!value) return value;
+  // Ignore local assets, placeholders, data URIs
+  if (value.startsWith('/') || value.startsWith('data:') || value.includes('placeholder')) {
+    return value;
+  }
 
-  const key = value.startsWith('http://') || value.startsWith('https://')
-    ? getKeyFromUrl(value)
-    : value;
+  // If S3 is not configured, return value as-is
+  if (!ENV.S3_BUCKET_NAME) return value;
 
-  if (!key) return value;
+  let key = value;
 
-  return getSignedUrl(
-    s3Client,
-    new GetObjectCommand({
-      Bucket: ENV.S3_BUCKET_NAME,
-      Key: key,
-    }),
-    { expiresIn }
-  );
+  if (value.startsWith('http://') || value.startsWith('https://')) {
+    const extractedKey = getKeyFromUrl(value);
+    if (!extractedKey) {
+      // External image URL (Unsplash, etc.) - return directly
+      return value;
+    }
+    key = extractedKey;
+  } else if (value.startsWith('arn:aws:s3:::')) {
+    const extractedKey = getKeyFromUrl(value);
+    if (!extractedKey) {
+      return value;
+    }
+    key = extractedKey;
+  }
+
+  if (!key || key === '/' || (key === value && key.startsWith('arn:'))) {
+    return value;
+  }
+
+  try {
+    return await getSignedUrl(
+      s3Client,
+      new GetObjectCommand({
+        Bucket: ENV.S3_BUCKET_NAME,
+        Key: key,
+      }),
+      { expiresIn }
+    );
+  } catch (err) {
+    console.warn(`[WARN] Failed to generate presigned S3 URL for key "${key}":`, err.message);
+    return getPublicUrl(key) || value;
+  }
 };
 
-export const signImageList = async (values = []) => Promise.all(
-  values.map((value) => getSignedImageUrl(value))
-);
+export const signImageList = async (values = []) => {
+  if (!Array.isArray(values)) return [];
+  return Promise.all(
+    values.map((value) => getSignedImageUrl(value).catch(() => value))
+  );
+};
