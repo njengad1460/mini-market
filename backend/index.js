@@ -1,7 +1,11 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { connectDB } from './utils/db.js';
 import { ENV } from './config/env.js';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 import requestLogger  from './middleware/Logging-Middleware.js';
 import errorHandler   from './middleware/Error-Handler-Middleware.js';
@@ -44,6 +48,14 @@ app.use('/api/sync',          syncRoutes);
 app.use('/api/notifications', notificationRoutes);
 
 app.use(errorHandler);
+
+// Serve built React app in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '..', 'frontend', 'dist')));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'dist', 'index.html'));
+  });
+}
 
 connectDB().then(() => {
   startOfflineSyncJob();
