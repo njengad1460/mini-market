@@ -97,6 +97,14 @@ export const uploadImageBuffer = async ({ buffer, mimeType, folder = 'uploads' }
 };
 
 export const getSignedImageUrl = async (value, expiresIn = 3600) => {
+  // If the value is already a full S3 URL or an ARN, we may need to transform it.
+  // For public product images stored under the `products/` prefix we can return a plain
+  // public URL without signing – the bucket is meant to be openly readable.
+  // This avoids extra presigned‑URL overhead and guarantees the URL works from the
+  // static‑website domain.
+  // NOTE: `ENV.S3_PUBLIC_BASE_URL` can also be used for all public objects, but we add
+  // an explicit guard for the `products/` folder to be safe if the env var is missing.
+
   if (!value || typeof value !== 'string') return value;
 
   // Ignore local assets, placeholders, data URIs
@@ -107,6 +115,12 @@ export const getSignedImageUrl = async (value, expiresIn = 3600) => {
   // If S3 is not configured, return value as-is
   if (!ENV.S3_BUCKET_NAME) return value;
 
+  // If a public base URL is configured, return a plain public URL (no presigning needed)
+  if (ENV.S3_PUBLIC_BASE_URL && !ENV.S3_PUBLIC_BASE_URL.startsWith('arn:')) {
+    const key = getKeyFromUrl(value) || value;
+    return getPublicUrl(key);
+  }
+
   let key = value;
 
   if (value.startsWith('http://') || value.startsWith('https://')) {
@@ -115,14 +129,22 @@ export const getSignedImageUrl = async (value, expiresIn = 3600) => {
       // External image URL (Unsplash, etc.) - return directly
       return value;
     }
+    // If the key points to a public product image, just return the public URL
+    if (extractedKey.startsWith('products/')) {
+      return getPublicUrl(extractedKey);
+    }
     key = extractedKey;
   } else if (value.startsWith('arn:aws:s3:::')) {
     const extractedKey = getKeyFromUrl(value);
     if (!extractedKey) {
       return value;
     }
+    if (extractedKey.startsWith('products/')) {
+      return getPublicUrl(extractedKey);
+    }
     key = extractedKey;
   }
+
 
   if (!key || key === '/' || (key === value && key.startsWith('arn:'))) {
     return value;
